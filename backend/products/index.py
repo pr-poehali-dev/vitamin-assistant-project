@@ -31,9 +31,64 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         if method == 'GET':
             params = event.get('queryStringParameters') or {}
+            product_id = params.get('id')
             category = params.get('category')
             
-            if category and category != 'Все':
+            if product_id:
+                cur.execute('''
+                    SELECT id, name, category, price, dosage, count, description, 
+                           emoji, rating, popular, in_stock, images, main_image,
+                           about_description, about_usage, documents, videos,
+                           composition_description, composition_table
+                    FROM products 
+                    WHERE id = %s
+                ''', (product_id,))
+                
+                row = cur.fetchone()
+                if not row:
+                    return {
+                        'statusCode': 404,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'error': 'Product not found'})
+                    }
+                
+                product = {
+                    'id': row[0],
+                    'name': row[1],
+                    'category': row[2],
+                    'price': row[3],
+                    'dosage': row[4],
+                    'count': row[5],
+                    'description': row[6],
+                    'emoji': row[7],
+                    'rating': float(row[8]) if row[8] else 0,
+                    'popular': row[9],
+                    'inStock': row[10],
+                    'images': row[11] if row[11] else [],
+                    'mainImage': row[12],
+                    'aboutDescription': row[13],
+                    'aboutUsage': row[14],
+                    'documents': row[15] if row[15] else [],
+                    'videos': row[16] if row[16] else [],
+                    'compositionDescription': row[17],
+                    'compositionTable': row[18] if row[18] else []
+                }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'product': product})
+                }
+            
+            elif category and category != 'Все':
                 cur.execute('''
                     SELECT id, name, category, price, dosage, count, description, 
                            emoji, rating, popular, in_stock
@@ -44,7 +99,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             else:
                 cur.execute('''
                     SELECT id, name, category, price, dosage, count, description, 
-                           emoji, rating, popular, in_stock
+                           emoji, rating, popular, in_stock, images, main_image,
+                           about_description, about_usage, documents, videos,
+                           composition_description, composition_table
                     FROM products 
                     WHERE in_stock = true
                     ORDER BY popular DESC, rating DESC
@@ -63,7 +120,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'emoji': row[7],
                     'rating': float(row[8]) if row[8] else 0,
                     'popular': row[9],
-                    'inStock': row[10]
+                    'inStock': row[10],
+                    'images': row[11] if row[11] else [],
+                    'mainImage': row[12],
+                    'aboutDescription': row[13],
+                    'aboutUsage': row[14],
+                    'documents': row[15] if row[15] else [],
+                    'videos': row[16] if row[16] else [],
+                    'compositionDescription': row[17],
+                    'compositionTable': row[18] if row[18] else []
                 })
             
             return {
@@ -82,8 +147,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute('''
                 INSERT INTO products (
                     name, category, price, dosage, count, description, 
-                    emoji, rating, popular, in_stock
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    emoji, rating, popular, in_stock, images, main_image,
+                    about_description, about_usage, documents, videos,
+                    composition_description, composition_table
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             ''', (
                 body_data.get('name'),
@@ -95,7 +162,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 body_data.get('emoji'),
                 body_data.get('rating', 0),
                 body_data.get('popular', False),
-                body_data.get('inStock', True)
+                body_data.get('inStock', True),
+                json.dumps(body_data.get('images', [])),
+                body_data.get('mainImage'),
+                body_data.get('aboutDescription'),
+                body_data.get('aboutUsage'),
+                json.dumps(body_data.get('documents', [])),
+                json.dumps(body_data.get('videos', [])),
+                body_data.get('compositionDescription'),
+                json.dumps(body_data.get('compositionTable', []))
             ))
             
             product_id = cur.fetchone()[0]
@@ -119,7 +194,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 UPDATE products 
                 SET name = %s, category = %s, price = %s, dosage = %s, 
                     count = %s, description = %s, emoji = %s, rating = %s,
-                    popular = %s, in_stock = %s, updated_at = CURRENT_TIMESTAMP
+                    popular = %s, in_stock = %s, images = %s, main_image = %s,
+                    about_description = %s, about_usage = %s, documents = %s, videos = %s,
+                    composition_description = %s, composition_table = %s,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
             ''', (
                 body_data.get('name'),
@@ -132,6 +210,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 body_data.get('rating'),
                 body_data.get('popular'),
                 body_data.get('inStock'),
+                json.dumps(body_data.get('images', [])) if body_data.get('images') is not None else None,
+                body_data.get('mainImage'),
+                body_data.get('aboutDescription'),
+                body_data.get('aboutUsage'),
+                json.dumps(body_data.get('documents', [])) if body_data.get('documents') is not None else None,
+                json.dumps(body_data.get('videos', [])) if body_data.get('videos') is not None else None,
+                body_data.get('compositionDescription'),
+                json.dumps(body_data.get('compositionTable', [])) if body_data.get('compositionTable') is not None else None,
                 product_id
             ))
             

@@ -7,6 +7,7 @@ import Catalog from '@/components/Catalog';
 import Profile from '@/components/Profile';
 import Checkout from '@/components/Checkout';
 import Admin from '@/components/Admin';
+import ProductDetail from '@/components/ProductDetail';
 
 export type SurveyData = {
   goals: string[];
@@ -21,9 +22,10 @@ export type SurveyData = {
 };
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'survey' | 'results' | 'catalog' | 'profile' | 'checkout' | 'admin'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'survey' | 'results' | 'catalog' | 'profile' | 'checkout' | 'admin' | 'productDetail'>('home');
   const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
   const [checkoutItems, setCheckoutItems] = useState<Array<{id: number; name: string; price: number; quantity: number; emoji: string}>>([]);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
   // Загрузка данных из localStorage при монтировании
   useEffect(() => {
@@ -86,6 +88,11 @@ const Index = () => {
     setCurrentView('admin');
   };
 
+  const handleViewProduct = (productId: number) => {
+    setSelectedProductId(productId);
+    setCurrentView('productDetail');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-secondary/20 to-muted/30">
       {currentView === 'home' && (
@@ -108,7 +115,11 @@ const Index = () => {
       )}
       
       {currentView === 'catalog' && (
-        <Catalog onBack={handleBackToHome} />
+        <Catalog onBack={handleBackToHome} onProductClick={handleViewProduct} />
+      )}
+
+      {currentView === 'productDetail' && selectedProductId && (
+        <ProductDetail productId={selectedProductId} onBack={() => setCurrentView('catalog')} />
       )}
       
       {currentView === 'profile' && surveyData && (

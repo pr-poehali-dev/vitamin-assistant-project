@@ -8,6 +8,7 @@ import Icon from '@/components/ui/icon';
 
 interface CatalogProps {
   onBack: () => void;
+  onProductClick?: (productId: number) => void;
 }
 
 interface Product {
@@ -24,7 +25,7 @@ interface Product {
   description?: string;
 }
 
-const Catalog = ({ onBack }: CatalogProps) => {
+const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<number[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -218,8 +219,9 @@ const Catalog = ({ onBack }: CatalogProps) => {
           {filteredProducts.map((product, index) => (
             <Card 
               key={product.id} 
-              className="p-6 hover-scale transition-all duration-300 animate-fade-in"
+              className="p-6 hover-scale transition-all duration-300 animate-fade-in cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => onProductClick?.(product.id)}
             >
               <div className="relative mb-4">
                 {product.popular && (
@@ -258,7 +260,10 @@ const Catalog = ({ onBack }: CatalogProps) => {
                   <div className="text-xs text-muted-foreground">за упаковку</div>
                 </div>
                 <Button 
-                  onClick={() => toggleCart(product.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCart(product.id);
+                  }}
                   variant={cart.includes(product.id) ? "default" : "outline"}
                   size="sm"
                   className="rounded-full"

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import ProductEditor from '@/components/ProductEditor';
 
 interface AdminProps {
   onBack: () => void;
@@ -26,6 +27,14 @@ interface Product {
   rating: number;
   popular: boolean;
   inStock: boolean;
+  images?: string[];
+  mainImage?: string;
+  aboutDescription?: string;
+  aboutUsage?: string;
+  documents?: Array<{name: string; url: string}>;
+  videos?: Array<{title: string; url: string}>;
+  compositionDescription?: string;
+  compositionTable?: Array<{component: string; mass: string; percentage: string}>;
 }
 
 interface Order {
@@ -417,7 +426,9 @@ const Admin = ({ onBack }: AdminProps) => {
                   <Button onClick={() => {
                     setEditingProduct({ 
                       id: 0, name: '', category: '', price: 0, dosage: '', count: '', 
-                      description: '', emoji: '💊', rating: 0, popular: false, inStock: true 
+                      description: '', emoji: '💊', rating: 0, popular: false, inStock: true,
+                      images: [], mainImage: '', aboutDescription: '', aboutUsage: '',
+                      documents: [], videos: [], compositionDescription: '', compositionTable: []
                     });
                     setIsProductDialogOpen(true);
                   }}>
@@ -425,115 +436,23 @@ const Admin = ({ onBack }: AdminProps) => {
                     Добавить товар
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-4xl max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle>
                       {editingProduct?.id ? 'Редактировать товар' : 'Новый товар'}
                     </DialogTitle>
                   </DialogHeader>
                   {editingProduct && (
-                    <div className="space-y-4 mt-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Название *</Label>
-                          <Input
-                            value={editingProduct.name}
-                            onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
-                            placeholder="Витамин D3"
-                          />
-                        </div>
-                        <div>
-                          <Label>Категория</Label>
-                          <Input
-                            value={editingProduct.category}
-                            onChange={(e) => setEditingProduct({...editingProduct, category: e.target.value})}
-                            placeholder="Витамины"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <Label>Цена (₽) *</Label>
-                          <Input
-                            type="number"
-                            value={editingProduct.price}
-                            onChange={(e) => setEditingProduct({...editingProduct, price: Number(e.target.value)})}
-                          />
-                        </div>
-                        <div>
-                          <Label>Дозировка</Label>
-                          <Input
-                            value={editingProduct.dosage}
-                            onChange={(e) => setEditingProduct({...editingProduct, dosage: e.target.value})}
-                            placeholder="2000 МЕ"
-                          />
-                        </div>
-                        <div>
-                          <Label>Количество</Label>
-                          <Input
-                            value={editingProduct.count}
-                            onChange={(e) => setEditingProduct({...editingProduct, count: e.target.value})}
-                            placeholder="90 капсул"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label>Описание</Label>
-                        <Textarea
-                          value={editingProduct.description}
-                          onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
-                          placeholder="Краткое описание товара"
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <Label>Emoji</Label>
-                          <Input
-                            value={editingProduct.emoji}
-                            onChange={(e) => setEditingProduct({...editingProduct, emoji: e.target.value})}
-                            placeholder="☀️"
-                          />
-                        </div>
-                        <div>
-                          <Label>Рейтинг</Label>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            value={editingProduct.rating}
-                            onChange={(e) => setEditingProduct({...editingProduct, rating: Number(e.target.value)})}
-                          />
-                        </div>
-                        <div className="flex items-center gap-4 pt-6">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={editingProduct.popular}
-                              onChange={(e) => setEditingProduct({...editingProduct, popular: e.target.checked})}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">Популярный</span>
-                          </label>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2 pt-4">
-                        <Button onClick={handleSaveProduct} disabled={loading} className="flex-1">
-                          {loading ? 'Сохранение...' : 'Сохранить'}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setEditingProduct(null);
-                            setIsProductDialogOpen(false);
-                          }}
-                        >
-                          Отмена
-                        </Button>
-                      </div>
-                    </div>
+                    <ProductEditor
+                      product={editingProduct}
+                      onChange={setEditingProduct}
+                      onSave={handleSaveProduct}
+                      onCancel={() => {
+                        setEditingProduct(null);
+                        setIsProductDialogOpen(false);
+                      }}
+                      loading={loading}
+                    />
                   )}
                 </DialogContent>
               </Dialog>
