@@ -57,7 +57,7 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
               </Button>
             </div>
             
-            <div className="flex items-center gap-8 justify-center lg:justify-start pt-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-8 justify-center lg:justify-start pt-6 text-sm text-muted-foreground flex-wrap">
               <div className="flex items-center gap-2">
                 <Icon name="CheckCircle2" className="text-primary" size={20} />
                 <span>Научный подход</span>
@@ -71,6 +71,17 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
                 <span>Персонально</span>
               </div>
             </div>
+            
+            {window.location.search.includes('admin') && (
+              <Button 
+                variant="link" 
+                className="text-xs text-muted-foreground mt-4"
+                onClick={() => window.location.href = '?view=admin'}
+              >
+                <Icon name="Settings" className="mr-1" size={14} />
+                Админ-панель
+              </Button>
+            )}
           </div>
           
           <div className="flex-1 relative animate-scale-in">

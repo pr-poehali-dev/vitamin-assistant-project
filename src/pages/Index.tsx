@@ -5,6 +5,8 @@ import Survey from '@/components/Survey';
 import Results from '@/components/Results';
 import Catalog from '@/components/Catalog';
 import Profile from '@/components/Profile';
+import Checkout from '@/components/Checkout';
+import Admin from '@/components/Admin';
 
 export type SurveyData = {
   goals: string[];
@@ -19,8 +21,9 @@ export type SurveyData = {
 };
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'survey' | 'results' | 'catalog' | 'profile'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'survey' | 'results' | 'catalog' | 'profile' | 'checkout' | 'admin'>('home');
   const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
+  const [checkoutItems, setCheckoutItems] = useState<Array<{id: number; name: string; price: number; quantity: number; emoji: string}>>([]);
 
   // Загрузка данных из localStorage при монтировании
   useEffect(() => {
@@ -31,6 +34,11 @@ const Index = () => {
       } catch (e) {
         console.error('Failed to parse saved survey data');
       }
+    }
+    
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'admin') {
+      setCurrentView('admin');
     }
   }, []);
 
@@ -58,7 +66,24 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
-    alert('Переход к оформлению заказа! В следующей версии здесь будет интеграция с платёжной системой.');
+    const recommendedItems = [
+      { id: 1, name: 'Витамин D3', price: 890, quantity: 1, emoji: '☀️' },
+      { id: 2, name: 'Омега-3 премиум', price: 1590, quantity: 1, emoji: '🐟' },
+      { id: 3, name: 'Магний цитрат', price: 690, quantity: 1, emoji: '🌙' },
+      { id: 4, name: 'B-комплекс', price: 790, quantity: 1, emoji: '⚡' }
+    ];
+    setCheckoutItems(recommendedItems);
+    setCurrentView('checkout');
+  };
+
+  const handleOrderSuccess = (orderNumber: string) => {
+    alert(`Заказ ${orderNumber} успешно оформлен! В реальной версии здесь будет перенаправление на оплату ЮKassa`);
+    setCurrentView('home');
+  };
+
+  const handleViewAdmin = () => {
+    window.history.pushState({}, '', '?view=admin');
+    setCurrentView('admin');
   };
 
   return (
@@ -88,6 +113,19 @@ const Index = () => {
       
       {currentView === 'profile' && surveyData && (
         <Profile data={surveyData} onBack={handleBackToHome} onCheckout={handleCheckout} />
+      )}
+      
+      {currentView === 'checkout' && (
+        <Checkout 
+          items={checkoutItems} 
+          surveyData={surveyData || undefined}
+          onBack={handleBackToHome}
+          onSuccess={handleOrderSuccess}
+        />
+      )}
+      
+      {currentView === 'admin' && (
+        <Admin onBack={handleBackToHome} />
       )}
     </div>
   );
