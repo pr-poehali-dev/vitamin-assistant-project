@@ -4,9 +4,10 @@ import Icon from '@/components/ui/icon';
 interface HeroProps {
   onStartSurvey: () => void;
   onViewCatalog: () => void;
+  onViewProfile?: () => void;
 }
 
-const Hero = ({ onStartSurvey, onViewCatalog }: HeroProps) => {
+const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
   return (
     <div className="relative overflow-hidden">
       <div className="container mx-auto px-4 py-16 md:py-24">
@@ -26,14 +27,25 @@ const Hero = ({ onStartSurvey, onViewCatalog }: HeroProps) => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-              <Button 
-                size="lg" 
-                className="text-lg px-8 py-6 rounded-full hover-scale"
-                onClick={onStartSurvey}
-              >
-                <Icon name="Sparkles" className="mr-2" size={20} />
-                Пройти анкету
-              </Button>
+              {onViewProfile ? (
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-6 rounded-full hover-scale"
+                  onClick={onViewProfile}
+                >
+                  <Icon name="User" className="mr-2" size={20} />
+                  Мой личный кабинет
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-6 rounded-full hover-scale"
+                  onClick={onStartSurvey}
+                >
+                  <Icon name="Sparkles" className="mr-2" size={20} />
+                  Пройти анкету
+                </Button>
+              )}
               <Button 
                 size="lg" 
                 variant="outline" 
