@@ -93,8 +93,8 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 text-center">
                     <div className="text-4xl mb-2">🧬</div>
-                    <div className="font-semibold text-foreground">Оценка анализа крови</div>
-                    <div className="text-sm text-muted-foreground mt-1">Уточняет подбор</div>
+                    <div className="font-semibold text-foreground">ДНК анализ</div>
+                    <div className="text-sm text-muted-foreground mt-1">Точность</div>
                   </div>
                   <div className="bg-gradient-to-br from-secondary/80 to-secondary/60 rounded-2xl p-6 text-center">
                     <div className="text-4xl mb-2">🥗</div>
