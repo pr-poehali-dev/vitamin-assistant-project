@@ -9,10 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import PageBuilder from '@/components/PageBuilder';
 
 interface AdminProps {
   onBack: () => void;
 }
+
+type AdminView = 'main' | 'pageBuilder';
 
 interface Product {
   id: number;
@@ -39,6 +42,7 @@ interface Order {
 }
 
 const Admin = ({ onBack }: AdminProps) => {
+  const [view, setView] = useState<AdminView>('main');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -149,6 +153,28 @@ const Admin = ({ onBack }: AdminProps) => {
     }
   };
 
+  const handleSendEmail = async (orderId: number, emailType: string) => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/d1e41067-6479-447b-94e1-4828cbf99900', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, emailType })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Email отправлен!');
+      } else {
+        alert(`Email залогирован: ${data.message}`);
+      }
+    } catch (error) {
+      alert('Ошибка отправки email');
+    }
+  };
+
+  if (view === 'pageBuilder') {
+    return <PageBuilder onBack={() => setView('main')} />;
+  }
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto max-w-7xl">
@@ -169,7 +195,7 @@ const Admin = ({ onBack }: AdminProps) => {
         </div>
 
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="products">
               <Icon name="Package" size={18} className="mr-2" />
               Товары ({products.length})
@@ -181,6 +207,10 @@ const Admin = ({ onBack }: AdminProps) => {
             <TabsTrigger value="sync">
               <Icon name="RefreshCw" size={18} className="mr-2" />
               Синхронизация
+            </TabsTrigger>
+            <TabsTrigger value="pages">
+              <Icon name="Layout" size={18} className="mr-2" />
+              Страницы
             </TabsTrigger>
           </TabsList>
 
@@ -382,6 +412,7 @@ const Admin = ({ onBack }: AdminProps) => {
                     <TableHead>Статус</TableHead>
                     <TableHead>Оплата</TableHead>
                     <TableHead>Дата</TableHead>
+                    <TableHead>Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -402,6 +433,16 @@ const Admin = ({ onBack }: AdminProps) => {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString('ru-RU')}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSendEmail(order.id, 'order_confirmation')}
+                        >
+                          <Icon name="Mail" size={14} className="mr-1" />
+                          Email
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -459,6 +500,41 @@ const Admin = ({ onBack }: AdminProps) => {
                   {loading ? 'Синхронизация...' : 'Синхронизировать каталог'}
                   <Icon name="RefreshCw" className="ml-2" size={20} />
                 </Button>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pages" className="space-y-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Конструктор страниц</h2>
+              <Button onClick={() => setView('pageBuilder')} size="lg">
+                <Icon name="Layout" size={18} className="mr-2" />
+                Открыть конструктор
+              </Button>
+            </div>
+            
+            <Card className="p-8 text-center">
+              <Icon name="FileText" size={64} className="mx-auto mb-4 text-primary" />
+              <h3 className="text-xl font-bold mb-2">Визуальный редактор страниц</h3>
+              <p className="text-muted-foreground mb-6">
+                Создавайте и редактируйте страницы сайта с помощью удобного drag-and-drop конструктора
+              </p>
+              <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+                <div className="p-4 border rounded-lg">
+                  <Icon name="Palette" size={24} className="mb-2 text-primary" />
+                  <p className="font-semibold mb-1">Стили и дизайн</p>
+                  <p className="text-sm text-muted-foreground">Настройка цветов, шрифтов и отступов</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <Icon name="Package" size={24} className="mb-2 text-primary" />
+                  <p className="font-semibold mb-1">Библиотека блоков</p>
+                  <p className="text-sm text-muted-foreground">Готовые компоненты для быстрой сборки</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <Icon name="Eye" size={24} className="mb-2 text-primary" />
+                  <p className="font-semibold mb-1">Живое превью</p>
+                  <p className="text-sm text-muted-foreground">Просмотр изменений в реальном времени</p>
+                </div>
               </div>
             </Card>
           </TabsContent>

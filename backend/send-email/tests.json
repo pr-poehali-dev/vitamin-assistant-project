@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Send order confirmation email",
+      "method": "POST",
+      "body": {
+        "orderId": 1,
+        "emailType": "order_confirmation",
+        "recipientEmail": "test@example.com"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": "boolean",
+        "logId": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
