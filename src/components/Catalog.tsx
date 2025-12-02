@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,11 +10,43 @@ interface CatalogProps {
   onBack: () => void;
 }
 
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  dosage: string;
+  count: string;
+  rating: number;
+  emoji: string;
+  popular: boolean;
+  inStock: boolean;
+  description?: string;
+}
+
 const Catalog = ({ onBack }: CatalogProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<number[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = [
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/6278c723-8882-4348-a57b-4a0136730417');
+      const data = await response.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fallbackProducts = [
     {
       id: 1,
       name: 'Витамин D3',
@@ -111,15 +143,29 @@ const Catalog = ({ onBack }: CatalogProps) => {
     );
   };
 
-  const categories = ['Все', 'Витамины', 'Минералы', 'Жирные кислоты', 'Коэнзимы'];
-
   const [activeCategory, setActiveCategory] = useState('Все');
 
-  const filteredProducts = products.filter(product => {
+  const displayProducts = products.length > 0 ? products : fallbackProducts;
+
+  const categories = ['Все', ...Array.from(new Set(displayProducts.map(p => p.category)))];
+
+  const filteredProducts = displayProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === 'Все' || product.category === activeCategory;
-    return matchesSearch && matchesCategory;
+    const isInStock = product.inStock !== false;
+    return matchesSearch && matchesCategory && isInStock;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="Loader" size={48} className="animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Загрузка каталога...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -131,7 +177,7 @@ const Catalog = ({ onBack }: CatalogProps) => {
             </Button>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">Каталог витаминов</h1>
-              <p className="text-muted-foreground mt-1">Выберите необходимые добавки</p>
+              <p className="text-muted-foreground mt-1">{displayProducts.length} товаров в наличии</p>
             </div>
           </div>
           <div className="relative">

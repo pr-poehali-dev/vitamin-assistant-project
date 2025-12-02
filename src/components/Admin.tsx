@@ -79,6 +79,7 @@ const Admin = ({ onBack }: AdminProps) => {
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<SurveyQuestion | null>(null);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [editingSyncSetting, setEditingSyncSetting] = useState<SyncSetting | null>(null);
@@ -200,6 +201,7 @@ const Admin = ({ onBack }: AdminProps) => {
         alert('Товар сохранён');
         loadProducts();
         setEditingProduct(null);
+        setIsProductDialogOpen(false);
       }
     } catch (error) {
       alert('Ошибка при сохранении товара');
@@ -410,12 +412,15 @@ const Admin = ({ onBack }: AdminProps) => {
           <TabsContent value="products" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Каталог товаров</h2>
-              <Dialog>
+              <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingProduct({ 
-                    id: 0, name: '', category: '', price: 0, dosage: '', count: '', 
-                    description: '', emoji: '💊', rating: 0, popular: false, inStock: true 
-                  })}>
+                  <Button onClick={() => {
+                    setEditingProduct({ 
+                      id: 0, name: '', category: '', price: 0, dosage: '', count: '', 
+                      description: '', emoji: '💊', rating: 0, popular: false, inStock: true 
+                    });
+                    setIsProductDialogOpen(true);
+                  }}>
                     <Icon name="Plus" size={18} className="mr-2" />
                     Добавить товар
                   </Button>
@@ -514,9 +519,20 @@ const Admin = ({ onBack }: AdminProps) => {
                         </div>
                       </div>
                       
-                      <Button onClick={handleSaveProduct} disabled={loading} className="w-full">
-                        {loading ? 'Сохранение...' : 'Сохранить'}
-                      </Button>
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handleSaveProduct} disabled={loading} className="flex-1">
+                          {loading ? 'Сохранение...' : 'Сохранить'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setEditingProduct(null);
+                            setIsProductDialogOpen(false);
+                          }}
+                        >
+                          Отмена
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </DialogContent>
@@ -572,7 +588,10 @@ const Admin = ({ onBack }: AdminProps) => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setEditingProduct(product)}
+                            onClick={() => {
+                              setEditingProduct(product);
+                              setIsProductDialogOpen(true);
+                            }}
                           >
                             <Icon name="Edit" size={16} />
                           </Button>
