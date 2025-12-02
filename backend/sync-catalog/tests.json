@@ -1,27 +1,30 @@
 {
   "tests": [
     {
-      "name": "Sync products from external catalog",
+      "name": "Get sync settings",
+      "method": "GET",
+      "queryParams": {
+        "resource": "settings"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "settings": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create sync setting",
       "method": "POST",
       "body": {
-        "catalogUrl": "https://example.com/catalog",
-        "products": [
-          {
-            "name": "Тестовый продукт",
-            "category": "Витамины",
-            "price": 500,
-            "dosage": "100 мг",
-            "count": "30 капсул",
-            "description": "Описание тестового продукта",
-            "emoji": "🧪",
-            "rating": 4.5
-          }
-        ]
+        "syncType": "google_sheets",
+        "sourceUrl": "https://docs.google.com/spreadsheets/d/test",
+        "scheduleMinutes": 60,
+        "updatePricesOnly": false
       },
       "expectedStatus": 200,
       "expectedBody": {
         "success": true,
-        "importedCount": "number"
+        "id": "number"
       },
       "bodyMatcher": "partial"
     }

@@ -48,14 +48,41 @@ interface SurveyQuestion {
   isActive: boolean;
 }
 
+interface SyncSetting {
+  id: number;
+  syncType: string;
+  isActive: boolean;
+  sourceUrl: string;
+  scheduleMinutes: number;
+  updatePricesOnly: boolean;
+  lastSyncAt?: string;
+  lastSyncStatus?: string;
+}
+
+interface SyncLog {
+  id: number;
+  startedAt: string;
+  finishedAt?: string;
+  status: string;
+  itemsProcessed: number;
+  itemsAdded: number;
+  itemsUpdated: number;
+  itemsSkipped: number;
+  errorMessage?: string;
+}
+
 const Admin = ({ onBack }: AdminProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
+  const [syncSettings, setSyncSettings] = useState<SyncSetting[]>([]);
+  const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<SurveyQuestion | null>(null);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
+  const [editingSyncSetting, setEditingSyncSetting] = useState<SyncSetting | null>(null);
+  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
   
   const [syncUrl, setSyncUrl] = useState('');
   const [syncProducts, setSyncProducts] = useState('');
@@ -64,6 +91,7 @@ const Admin = ({ onBack }: AdminProps) => {
     loadProducts();
     loadOrders();
     loadQuestions();
+    loadSyncSettings();
   }, []);
 
   const loadProducts = async () => {
@@ -93,6 +121,26 @@ const Admin = ({ onBack }: AdminProps) => {
       setQuestions(data.questions || []);
     } catch (error) {
       console.error('Error loading questions:', error);
+    }
+  };
+
+  const loadSyncSettings = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731?resource=settings');
+      const data = await response.json();
+      setSyncSettings(data.settings || []);
+    } catch (error) {
+      console.error('Error loading sync settings:', error);
+    }
+  };
+
+  const loadSyncLogs = async (settingId: number) => {
+    try {
+      const response = await fetch(`https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731?resource=logs&setting_id=${settingId}`);
+      const data = await response.json();
+      setSyncLogs(data.logs || []);
+    } catch (error) {
+      console.error('Error loading sync logs:', error);
     }
   };
 
@@ -239,6 +287,84 @@ const Admin = ({ onBack }: AdminProps) => {
       loadQuestions();
     } catch (error) {
       alert('Ошибка при изменении порядка');
+    }
+  };
+
+  const handleSaveSyncSetting = async () => {
+    if (!editingSyncSetting) return;
+
+    setLoading(true);
+    try {
+      const method = editingSyncSetting.id ? 'PUT' : 'POST';
+      const response = await fetch('https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingSyncSetting)
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Настройка сохранена');
+        loadSyncSettings();
+        setEditingSyncSetting(null);
+        setIsSyncDialogOpen(false);
+      }
+    } catch (error) {
+      alert('Ошибка при сохранении настройки');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRunSync = async (settingId: number) => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731?action=sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settingId })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`Синхронизация завершена!\nДобавлено: ${data.itemsAdded}\nОбновлено: ${data.itemsUpdated}\nПропущено: ${data.itemsSkipped}`);
+        loadProducts();
+        loadSyncSettings();
+      } else {
+        alert(`Ошибка: ${data.error}`);
+      }
+    } catch (error) {
+      alert('Ошибка при синхронизации');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleSyncActive = async (setting: SyncSetting) => {
+    try {
+      await fetch('https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: setting.id, isActive: !setting.isActive })
+      });
+      loadSyncSettings();
+    } catch (error) {
+      alert('Ошибка при изменении статуса');
+    }
+  };
+
+  const handleDeleteSyncSetting = async (id: number) => {
+    if (!confirm('Отключить эту синхронизацию?')) return;
+
+    try {
+      await fetch(`https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731?id=${id}`, {
+        method: 'DELETE'
+      });
+      loadSyncSettings();
+    } catch (error) {
+      alert('Ошибка при удалении');
     }
   };
 
@@ -508,56 +634,282 @@ const Admin = ({ onBack }: AdminProps) => {
           </TabsContent>
 
           <TabsContent value="sync" className="space-y-4">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Icon name="Download" size={24} className="text-primary" />
-                Синхронизация каталога
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="sync-url">URL внешнего каталога</Label>
-                  <Input
-                    id="sync-url"
-                    placeholder="https://example.com/api/products"
-                    value={syncUrl}
-                    onChange={(e) => setSyncUrl(e.target.value)}
-                    className="mt-2"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Укажите ссылку на JSON API с товарами
-                  </p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="sync-products">Или вставьте JSON с товарами</Label>
-                  <Textarea
-                    id="sync-products"
-                    placeholder={`[
-  {
-    "name": "Витамин D3",
-    "category": "Витамины",
-    "price": 890,
-    "dosage": "2000 МЕ",
-    "count": "90 капсул",
-    "description": "Описание",
-    "emoji": "☀️",
-    "rating": 4.8
-  }
-]`}
-                    value={syncProducts}
-                    onChange={(e) => setSyncProducts(e.target.value)}
-                    className="mt-2 font-mono text-sm"
-                    rows={12}
-                  />
-                </div>
-                
-                <Button onClick={handleSyncCatalog} disabled={loading} size="lg" className="w-full">
-                  {loading ? 'Синхронизация...' : 'Синхронизировать каталог'}
-                  <Icon name="RefreshCw" className="ml-2" size={20} />
-                </Button>
-              </div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Автоматическая синхронизация</h2>
+              <Dialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => {
+                    setEditingSyncSetting({
+                      id: 0,
+                      syncType: 'google_sheets',
+                      isActive: false,
+                      sourceUrl: '',
+                      scheduleMinutes: 60,
+                      updatePricesOnly: false
+                    });
+                    setIsSyncDialogOpen(true);
+                  }}>
+                    <Icon name="Plus" size={18} className="mr-2" />
+                    Добавить синхронизацию
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingSyncSetting?.id ? 'Редактировать синхронизацию' : 'Новая синхронизация'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  {editingSyncSetting && (
+                    <div className="space-y-4 mt-4">
+                      <div>
+                        <Label>Тип синхронизации</Label>
+                        <select
+                          value={editingSyncSetting.syncType}
+                          onChange={(e) => setEditingSyncSetting({...editingSyncSetting, syncType: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-md mt-2"
+                        >
+                          <option value="google_sheets">Google Таблицы</option>
+                          <option value="website">Парсинг сайта</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label>
+                          {editingSyncSetting.syncType === 'google_sheets' 
+                            ? 'Ссылка на Google Таблицу' 
+                            : 'URL сайта для парсинга'}
+                        </Label>
+                        <Input
+                          value={editingSyncSetting.sourceUrl}
+                          onChange={(e) => setEditingSyncSetting({...editingSyncSetting, sourceUrl: e.target.value})}
+                          placeholder={editingSyncSetting.syncType === 'google_sheets'
+                            ? 'https://docs.google.com/spreadsheets/d/...'
+                            : 'https://example.com/catalog'}
+                          className="mt-2"
+                        />
+                        {editingSyncSetting.syncType === 'google_sheets' && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Опубликуйте таблицу: Файл → Опубликовать в интернете
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Периодичность обновления</Label>
+                          <select
+                            value={editingSyncSetting.scheduleMinutes}
+                            onChange={(e) => setEditingSyncSetting({...editingSyncSetting, scheduleMinutes: Number(e.target.value)})}
+                            className="w-full px-3 py-2 border rounded-md mt-2"
+                          >
+                            <option value={15}>Каждые 15 минут</option>
+                            <option value={30}>Каждые 30 минут</option>
+                            <option value={60}>Каждый час</option>
+                            <option value={180}>Каждые 3 часа</option>
+                            <option value={360}>Каждые 6 часов</option>
+                            <option value={720}>Каждые 12 часов</option>
+                            <option value={1440}>Раз в день</option>
+                          </select>
+                        </div>
+
+                        <div className="flex flex-col justify-end">
+                          <label className="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-accent">
+                            <input
+                              type="checkbox"
+                              checked={editingSyncSetting.updatePricesOnly}
+                              onChange={(e) => setEditingSyncSetting({...editingSyncSetting, updatePricesOnly: e.target.checked})}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">Обновлять только цены</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900">
+                          <strong>Обновлять только цены:</strong> если включено, система будет искать товары по названию 
+                          и обновлять только цену. Новые товары добавляться не будут.
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handleSaveSyncSetting} disabled={loading} className="flex-1">
+                          {loading ? 'Сохранение...' : 'Сохранить'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setEditingSyncSetting(null);
+                            setIsSyncDialogOpen(false);
+                          }}
+                        >
+                          Отмена
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Тип</TableHead>
+                    <TableHead>Источник</TableHead>
+                    <TableHead className="w-32">Периодичность</TableHead>
+                    <TableHead className="w-24 text-center">Режим</TableHead>
+                    <TableHead className="w-32">Последняя синхр.</TableHead>
+                    <TableHead className="w-24 text-center">Статус</TableHead>
+                    <TableHead className="w-48 text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {syncSettings.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        Нет настроенных синхронизаций. Нажмите "Добавить синхронизацию" чтобы начать.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    syncSettings.map((setting) => (
+                      <TableRow key={setting.id}>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {setting.syncType === 'google_sheets' && (
+                              <><Icon name="Table" size={14} className="mr-1" />Google Sheets</>
+                            )}
+                            {setting.syncType === 'website' && (
+                              <><Icon name="Globe" size={14} className="mr-1" />Парсинг</>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-sm">
+                          {setting.sourceUrl}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {setting.scheduleMinutes < 60 
+                            ? `${setting.scheduleMinutes} мин`
+                            : setting.scheduleMinutes === 60 
+                              ? '1 час'
+                              : `${Math.floor(setting.scheduleMinutes / 60)} ч`}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {setting.updatePricesOnly ? (
+                            <Badge variant="secondary" className="text-xs">Только цены</Badge>
+                          ) : (
+                            <Badge variant="default" className="text-xs">Полная</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {setting.lastSyncAt 
+                            ? new Date(setting.lastSyncAt).toLocaleString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : 'Ещё не запускалась'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {setting.isActive ? (
+                            <Badge className="bg-green-500 text-xs">Активна</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Остановлена</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRunSync(setting.id)}
+                              disabled={loading}
+                              title="Запустить сейчас"
+                            >
+                              <Icon name="Play" size={16} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleSyncActive(setting)}
+                              title={setting.isActive ? 'Остановить' : 'Запустить'}
+                            >
+                              {setting.isActive ? (
+                                <Icon name="Pause" size={16} />
+                              ) : (
+                                <Icon name="Power" size={16} />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                loadSyncLogs(setting.id);
+                              }}
+                              title="Посмотреть логи"
+                            >
+                              <Icon name="FileText" size={16} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingSyncSetting(setting);
+                                setIsSyncDialogOpen(true);
+                              }}
+                            >
+                              <Icon name="Pencil" size={16} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSyncSetting(setting.id)}
+                            >
+                              <Icon name="Trash2" size={16} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </Card>
+
+            {syncLogs.length > 0 && (
+              <Card className="mt-6">
+                <div className="p-4 border-b">
+                  <h3 className="font-bold flex items-center gap-2">
+                    <Icon name="History" size={18} />
+                    История синхронизаций
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="space-y-2">
+                    {syncLogs.map((log) => (
+                      <div key={log.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
+                            {log.status === 'success' ? 'Успешно' : 'Ошибка'}
+                          </Badge>
+                          <span className="text-sm">
+                            {new Date(log.startedAt).toLocaleString('ru-RU')}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            +{log.itemsAdded} / ~{log.itemsUpdated} / -{log.itemsSkipped}
+                          </span>
+                        </div>
+                        {log.errorMessage && (
+                          <span className="text-xs text-destructive">{log.errorMessage}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="survey" className="space-y-4">
