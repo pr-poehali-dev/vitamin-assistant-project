@@ -38,11 +38,24 @@ interface Order {
   createdAt: string;
 }
 
+interface SurveyQuestion {
+  id: number;
+  questionText: string;
+  questionType: string;
+  options?: string[];
+  isRequired: boolean;
+  displayOrder: number;
+  isActive: boolean;
+}
+
 const Admin = ({ onBack }: AdminProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<SurveyQuestion | null>(null);
+  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   
   const [syncUrl, setSyncUrl] = useState('');
   const [syncProducts, setSyncProducts] = useState('');
@@ -50,6 +63,7 @@ const Admin = ({ onBack }: AdminProps) => {
   useEffect(() => {
     loadProducts();
     loadOrders();
+    loadQuestions();
   }, []);
 
   const loadProducts = async () => {
@@ -69,6 +83,16 @@ const Admin = ({ onBack }: AdminProps) => {
       setOrders(data.orders || []);
     } catch (error) {
       console.error('Error loading orders:', error);
+    }
+  };
+
+  const loadQuestions = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey');
+      const data = await response.json();
+      setQuestions(data.questions || []);
+    } catch (error) {
+      console.error('Error loading questions:', error);
     }
   };
 
@@ -149,6 +173,75 @@ const Admin = ({ onBack }: AdminProps) => {
     }
   };
 
+  const handleSaveQuestion = async () => {
+    if (!editingQuestion) return;
+
+    setLoading(true);
+    try {
+      const method = editingQuestion.id ? 'PUT' : 'POST';
+      const response = await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingQuestion)
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Вопрос сохранён');
+        loadQuestions();
+        setEditingQuestion(null);
+        setIsQuestionDialogOpen(false);
+      }
+    } catch (error) {
+      alert('Ошибка при сохранении вопроса');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (id: number) => {
+    if (!confirm('Удалить вопрос?')) return;
+
+    try {
+      await fetch(`https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey&id=${id}`, {
+        method: 'DELETE'
+      });
+      loadQuestions();
+    } catch (error) {
+      alert('Ошибка при удалении вопроса');
+    }
+  };
+
+  const handleMoveQuestion = async (id: number, direction: 'up' | 'down') => {
+    const index = questions.findIndex(q => q.id === id);
+    if (index === -1) return;
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === questions.length - 1) return;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    const currentQ = questions[index];
+    const swapQ = questions[newIndex];
+
+    try {
+      await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentQ.id, displayOrder: swapQ.displayOrder })
+      });
+
+      await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: swapQ.id, displayOrder: currentQ.displayOrder })
+      });
+
+      loadQuestions();
+    } catch (error) {
+      alert('Ошибка при изменении порядка');
+    }
+  };
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto max-w-7xl">
@@ -169,7 +262,7 @@ const Admin = ({ onBack }: AdminProps) => {
         </div>
 
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="products">
               <Icon name="Package" size={18} className="mr-2" />
               Товары ({products.length})
@@ -177,6 +270,10 @@ const Admin = ({ onBack }: AdminProps) => {
             <TabsTrigger value="orders">
               <Icon name="ShoppingBag" size={18} className="mr-2" />
               Заказы ({orders.length})
+            </TabsTrigger>
+            <TabsTrigger value="survey">
+              <Icon name="ClipboardList" size={18} className="mr-2" />
+              Анкета ({questions.length})
             </TabsTrigger>
             <TabsTrigger value="sync">
               <Icon name="RefreshCw" size={18} className="mr-2" />
@@ -460,6 +557,213 @@ const Admin = ({ onBack }: AdminProps) => {
                   <Icon name="RefreshCw" className="ml-2" size={20} />
                 </Button>
               </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="survey" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Вопросы анкеты</h2>
+              <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => {
+                    setEditingQuestion({ 
+                      id: 0, 
+                      questionText: '', 
+                      questionType: 'text', 
+                      options: undefined, 
+                      isRequired: true, 
+                      displayOrder: questions.length + 1,
+                      isActive: true
+                    });
+                    setIsQuestionDialogOpen(true);
+                  }}>
+                    <Icon name="Plus" size={18} className="mr-2" />
+                    Добавить вопрос
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingQuestion?.id ? 'Редактировать вопрос' : 'Новый вопрос'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  {editingQuestion && (
+                    <div className="space-y-4 mt-4">
+                      <div>
+                        <Label>Текст вопроса *</Label>
+                        <Input
+                          value={editingQuestion.questionText}
+                          onChange={(e) => setEditingQuestion({...editingQuestion, questionText: e.target.value})}
+                          placeholder="Как вас зовут?"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Тип вопроса</Label>
+                          <select
+                            value={editingQuestion.questionType}
+                            onChange={(e) => setEditingQuestion({...editingQuestion, questionType: e.target.value})}
+                            className="w-full px-3 py-2 border rounded-md"
+                          >
+                            <option value="text">Текст (одна строка)</option>
+                            <option value="textarea">Текст (несколько строк)</option>
+                            <option value="number">Число</option>
+                            <option value="radio">Выбор одного варианта</option>
+                            <option value="checkbox">Выбор нескольких</option>
+                            <option value="select">Выпадающий список</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-4 pt-6">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={editingQuestion.isRequired}
+                              onChange={(e) => setEditingQuestion({...editingQuestion, isRequired: e.target.checked})}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">Обязательный</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={editingQuestion.isActive}
+                              onChange={(e) => setEditingQuestion({...editingQuestion, isActive: e.target.checked})}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">Активен</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {['radio', 'checkbox', 'select'].includes(editingQuestion.questionType) && (
+                        <div>
+                          <Label>Варианты ответов (каждый с новой строки)</Label>
+                          <Textarea
+                            value={editingQuestion.options?.join('\n') || ''}
+                            onChange={(e) => setEditingQuestion({
+                              ...editingQuestion, 
+                              options: e.target.value.split('\n').filter(o => o.trim())
+                            })}
+                            placeholder="Вариант 1&#10;Вариант 2&#10;Вариант 3"
+                            rows={5}
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handleSaveQuestion} disabled={loading} className="flex-1">
+                          {loading ? 'Сохранение...' : 'Сохранить'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setEditingQuestion(null);
+                            setIsQuestionDialogOpen(false);
+                          }}
+                        >
+                          Отмена
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Вопрос</TableHead>
+                    <TableHead>Тип</TableHead>
+                    <TableHead className="w-24 text-center">Обяз.</TableHead>
+                    <TableHead className="w-24 text-center">Статус</TableHead>
+                    <TableHead className="w-32 text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {questions.map((question, index) => (
+                    <TableRow key={question.id}>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {question.displayOrder}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {question.questionText}
+                        {question.options && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {question.options.slice(0, 3).join(', ')}
+                            {question.options.length > 3 && '...'}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {question.questionType === 'text' && 'Текст'}
+                          {question.questionType === 'textarea' && 'Многострочный'}
+                          {question.questionType === 'number' && 'Число'}
+                          {question.questionType === 'radio' && 'Один вариант'}
+                          {question.questionType === 'checkbox' && 'Множественный'}
+                          {question.questionType === 'select' && 'Список'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {question.isRequired ? (
+                          <Badge variant="destructive" className="text-xs">Да</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Нет</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {question.isActive ? (
+                          <Badge className="bg-green-500 text-xs">Активен</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">Неактивен</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveQuestion(question.id, 'up')}
+                            disabled={index === 0}
+                          >
+                            <Icon name="ChevronUp" size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveQuestion(question.id, 'down')}
+                            disabled={index === questions.length - 1}
+                          >
+                            <Icon name="ChevronDown" size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingQuestion(question);
+                              setIsQuestionDialogOpen(true);
+                            }}
+                          >
+                            <Icon name="Pencil" size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteQuestion(question.id)}
+                          >
+                            <Icon name="Trash2" size={16} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Card>
           </TabsContent>
         </Tabs>
