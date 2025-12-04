@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import ProductEditor from '@/components/ProductEditor';
+import AdminProductsTab from '@/components/admin/AdminProductsTab';
+import AdminOrdersTab from '@/components/admin/AdminOrdersTab';
+import AdminSurveyTab from '@/components/admin/AdminSurveyTab';
+import AdminSyncTab from '@/components/admin/AdminSyncTab';
 
 interface AdminProps {
   onBack: () => void;
@@ -88,14 +85,8 @@ const Admin = ({ onBack }: AdminProps) => {
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<SurveyQuestion | null>(null);
-  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [editingSyncSetting, setEditingSyncSetting] = useState<SyncSetting | null>(null);
-  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
-  
-  const [syncUrl, setSyncUrl] = useState('');
-  const [syncProducts, setSyncProducts] = useState('');
 
   useEffect(() => {
     loadProducts();
@@ -154,44 +145,6 @@ const Admin = ({ onBack }: AdminProps) => {
     }
   };
 
-  const handleSyncCatalog = async () => {
-    if (!syncUrl && !syncProducts) {
-      alert('Укажите URL каталога или вставьте JSON с товарами');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let productsToSync = [];
-      
-      if (syncProducts) {
-        productsToSync = JSON.parse(syncProducts);
-      }
-
-      const response = await fetch('https://functions.poehali.dev/7b036231-df88-4c5e-adc8-37faa7e68731', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          catalogUrl: syncUrl,
-          products: productsToSync
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        alert(`Успешно импортировано товаров: ${data.importedCount}`);
-        loadProducts();
-        setSyncUrl('');
-        setSyncProducts('');
-      }
-    } catch (error) {
-      alert('Ошибка при синхронизации каталога');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSaveProduct = async () => {
     if (!editingProduct) return;
 
@@ -210,7 +163,6 @@ const Admin = ({ onBack }: AdminProps) => {
         alert('Товар сохранён');
         loadProducts();
         setEditingProduct(null);
-        setIsProductDialogOpen(false);
       }
     } catch (error) {
       alert('Ошибка при сохранении товара');
@@ -250,7 +202,6 @@ const Admin = ({ onBack }: AdminProps) => {
         alert('Вопрос сохранён');
         loadQuestions();
         setEditingQuestion(null);
-        setIsQuestionDialogOpen(false);
       }
     } catch (error) {
       alert('Ошибка при сохранении вопроса');
@@ -319,7 +270,6 @@ const Admin = ({ onBack }: AdminProps) => {
         alert('Настройка сохранена');
         loadSyncSettings();
         setEditingSyncSetting(null);
-        setIsSyncDialogOpen(false);
       }
     } catch (error) {
       alert('Ошибка при сохранении настройки');
@@ -418,643 +368,46 @@ const Admin = ({ onBack }: AdminProps) => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">Каталог товаров</h2>
-              <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => {
-                    setEditingProduct({ 
-                      id: 0, name: '', category: '', price: 0, dosage: '', count: '', 
-                      description: '', emoji: '💊', rating: 0, popular: false, inStock: true,
-                      images: [], mainImage: '', aboutDescription: '', aboutUsage: '',
-                      documents: [], videos: [], compositionDescription: '', compositionTable: []
-                    });
-                    setIsProductDialogOpen(true);
-                  }}>
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Добавить товар
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh]">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingProduct?.id ? 'Редактировать товар' : 'Новый товар'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  {editingProduct && (
-                    <ProductEditor
-                      product={editingProduct}
-                      onChange={setEditingProduct}
-                      onSave={handleSaveProduct}
-                      onCancel={() => {
-                        setEditingProduct(null);
-                        setIsProductDialogOpen(false);
-                      }}
-                      loading={loading}
-                    />
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Товар</TableHead>
-                    <TableHead>Категория</TableHead>
-                    <TableHead>Цена</TableHead>
-                    <TableHead>Рейтинг</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead className="text-right">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{product.emoji}</span>
-                          <div>
-                            <p className="font-medium">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">{product.dosage}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{product.category}</Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold">{product.price} ₽</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Icon name="Star" size={14} className="text-yellow-500 fill-yellow-500" />
-                          <span>{product.rating}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {product.popular && <Badge className="text-xs">Популярное</Badge>}
-                          {product.inStock ? (
-                            <Badge variant="outline" className="text-xs text-green-600 border-green-600">В наличии</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs text-red-600 border-red-600">Нет в наличии</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingProduct(product);
-                              setIsProductDialogOpen(true);
-                            }}
-                          >
-                            <Icon name="Edit" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteProduct(product.id)}
-                          >
-                            <Icon name="Trash2" size={16} />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+          <TabsContent value="products">
+            <AdminProductsTab
+              products={products}
+              loading={loading}
+              onSaveProduct={handleSaveProduct}
+              onDeleteProduct={handleDeleteProduct}
+              editingProduct={editingProduct}
+              setEditingProduct={setEditingProduct}
+            />
           </TabsContent>
 
-          <TabsContent value="orders" className="space-y-4">
-            <h2 className="text-xl font-bold">Заказы</h2>
-            
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Номер заказа</TableHead>
-                    <TableHead>Клиент</TableHead>
-                    <TableHead>Сумма</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead>Оплата</TableHead>
-                    <TableHead>Дата</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-mono text-sm">{order.orderNumber}</TableCell>
-                      <TableCell>{order.customerName}</TableCell>
-                      <TableCell className="font-semibold">{order.totalAmount} ₽</TableCell>
-                      <TableCell>
-                        <Badge variant={order.status === 'pending' ? 'secondary' : 'default'}>
-                          {order.status === 'pending' ? 'В обработке' : order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={order.paymentStatus === 'pending' ? 'outline' : 'default'}>
-                          {order.paymentStatus === 'pending' ? 'Ожидает' : order.paymentStatus}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleDateString('ru-RU')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+          <TabsContent value="orders">
+            <AdminOrdersTab orders={orders} />
           </TabsContent>
 
-          <TabsContent value="sync" className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Автоматическая синхронизация</h2>
-              <Dialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => {
-                    setEditingSyncSetting({
-                      id: 0,
-                      syncType: 'google_sheets',
-                      isActive: false,
-                      sourceUrl: '',
-                      scheduleMinutes: 60,
-                      updatePricesOnly: false
-                    });
-                    setIsSyncDialogOpen(true);
-                  }}>
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Добавить синхронизацию
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingSyncSetting?.id ? 'Редактировать синхронизацию' : 'Новая синхронизация'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  {editingSyncSetting && (
-                    <div className="space-y-4 mt-4">
-                      <div>
-                        <Label>Тип синхронизации</Label>
-                        <select
-                          value={editingSyncSetting.syncType}
-                          onChange={(e) => setEditingSyncSetting({...editingSyncSetting, syncType: e.target.value})}
-                          className="w-full px-3 py-2 border rounded-md mt-2"
-                        >
-                          <option value="google_sheets">Google Таблицы</option>
-                          <option value="website">Парсинг сайта</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <Label>
-                          {editingSyncSetting.syncType === 'google_sheets' 
-                            ? 'Ссылка на Google Таблицу' 
-                            : 'URL сайта для парсинга'}
-                        </Label>
-                        <Input
-                          value={editingSyncSetting.sourceUrl}
-                          onChange={(e) => setEditingSyncSetting({...editingSyncSetting, sourceUrl: e.target.value})}
-                          placeholder={editingSyncSetting.syncType === 'google_sheets'
-                            ? 'https://docs.google.com/spreadsheets/d/...'
-                            : 'https://example.com/catalog'}
-                          className="mt-2"
-                        />
-                        {editingSyncSetting.syncType === 'google_sheets' && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Опубликуйте таблицу: Файл → Опубликовать в интернете
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Периодичность обновления</Label>
-                          <select
-                            value={editingSyncSetting.scheduleMinutes}
-                            onChange={(e) => setEditingSyncSetting({...editingSyncSetting, scheduleMinutes: Number(e.target.value)})}
-                            className="w-full px-3 py-2 border rounded-md mt-2"
-                          >
-                            <option value={15}>Каждые 15 минут</option>
-                            <option value={30}>Каждые 30 минут</option>
-                            <option value={60}>Каждый час</option>
-                            <option value={180}>Каждые 3 часа</option>
-                            <option value={360}>Каждые 6 часов</option>
-                            <option value={720}>Каждые 12 часов</option>
-                            <option value={1440}>Раз в день</option>
-                          </select>
-                        </div>
-
-                        <div className="flex flex-col justify-end">
-                          <label className="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-accent">
-                            <input
-                              type="checkbox"
-                              checked={editingSyncSetting.updatePricesOnly}
-                              onChange={(e) => setEditingSyncSetting({...editingSyncSetting, updatePricesOnly: e.target.checked})}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">Обновлять только цены</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-900">
-                          <strong>Обновлять только цены:</strong> если включено, система будет искать товары по названию 
-                          и обновлять только цену. Новые товары добавляться не будут.
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2 pt-4">
-                        <Button onClick={handleSaveSyncSetting} disabled={loading} className="flex-1">
-                          {loading ? 'Сохранение...' : 'Сохранить'}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setEditingSyncSetting(null);
-                            setIsSyncDialogOpen(false);
-                          }}
-                        >
-                          Отмена
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Тип</TableHead>
-                    <TableHead>Источник</TableHead>
-                    <TableHead className="w-32">Периодичность</TableHead>
-                    <TableHead className="w-24 text-center">Режим</TableHead>
-                    <TableHead className="w-32">Последняя синхр.</TableHead>
-                    <TableHead className="w-24 text-center">Статус</TableHead>
-                    <TableHead className="w-48 text-right">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {syncSettings.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Нет настроенных синхронизаций. Нажмите "Добавить синхронизацию" чтобы начать.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    syncSettings.map((setting) => (
-                      <TableRow key={setting.id}>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {setting.syncType === 'google_sheets' && (
-                              <><Icon name="Table" size={14} className="mr-1" />Google Sheets</>
-                            )}
-                            {setting.syncType === 'website' && (
-                              <><Icon name="Globe" size={14} className="mr-1" />Парсинг</>
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate text-sm">
-                          {setting.sourceUrl}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {setting.scheduleMinutes < 60 
-                            ? `${setting.scheduleMinutes} мин`
-                            : setting.scheduleMinutes === 60 
-                              ? '1 час'
-                              : `${Math.floor(setting.scheduleMinutes / 60)} ч`}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {setting.updatePricesOnly ? (
-                            <Badge variant="secondary" className="text-xs">Только цены</Badge>
-                          ) : (
-                            <Badge variant="default" className="text-xs">Полная</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {setting.lastSyncAt 
-                            ? new Date(setting.lastSyncAt).toLocaleString('ru-RU', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
-                            : 'Ещё не запускалась'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {setting.isActive ? (
-                            <Badge className="bg-green-500 text-xs">Активна</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">Остановлена</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRunSync(setting.id)}
-                              disabled={loading}
-                              title="Запустить сейчас"
-                            >
-                              <Icon name="Play" size={16} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleSyncActive(setting)}
-                              title={setting.isActive ? 'Остановить' : 'Запустить'}
-                            >
-                              {setting.isActive ? (
-                                <Icon name="Pause" size={16} />
-                              ) : (
-                                <Icon name="Power" size={16} />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                loadSyncLogs(setting.id);
-                              }}
-                              title="Посмотреть логи"
-                            >
-                              <Icon name="FileText" size={16} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingSyncSetting(setting);
-                                setIsSyncDialogOpen(true);
-                              }}
-                            >
-                              <Icon name="Pencil" size={16} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteSyncSetting(setting.id)}
-                            >
-                              <Icon name="Trash2" size={16} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </Card>
-
-            {syncLogs.length > 0 && (
-              <Card className="mt-6">
-                <div className="p-4 border-b">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <Icon name="History" size={18} />
-                    История синхронизаций
-                  </h3>
-                </div>
-                <div className="p-4">
-                  <div className="space-y-2">
-                    {syncLogs.map((log) => (
-                      <div key={log.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
-                            {log.status === 'success' ? 'Успешно' : 'Ошибка'}
-                          </Badge>
-                          <span className="text-sm">
-                            {new Date(log.startedAt).toLocaleString('ru-RU')}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            +{log.itemsAdded} / ~{log.itemsUpdated} / -{log.itemsSkipped}
-                          </span>
-                        </div>
-                        {log.errorMessage && (
-                          <span className="text-xs text-destructive">{log.errorMessage}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            )}
+          <TabsContent value="survey">
+            <AdminSurveyTab
+              questions={questions}
+              loading={loading}
+              onSaveQuestion={handleSaveQuestion}
+              onDeleteQuestion={handleDeleteQuestion}
+              onMoveQuestion={handleMoveQuestion}
+              editingQuestion={editingQuestion}
+              setEditingQuestion={setEditingQuestion}
+            />
           </TabsContent>
 
-          <TabsContent value="survey" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">Вопросы анкеты</h2>
-              <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => {
-                    setEditingQuestion({ 
-                      id: 0, 
-                      questionText: '', 
-                      questionType: 'text', 
-                      options: undefined, 
-                      isRequired: true, 
-                      displayOrder: questions.length + 1,
-                      isActive: true
-                    });
-                    setIsQuestionDialogOpen(true);
-                  }}>
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Добавить вопрос
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingQuestion?.id ? 'Редактировать вопрос' : 'Новый вопрос'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  {editingQuestion && (
-                    <div className="space-y-4 mt-4">
-                      <div>
-                        <Label>Текст вопроса *</Label>
-                        <Input
-                          value={editingQuestion.questionText}
-                          onChange={(e) => setEditingQuestion({...editingQuestion, questionText: e.target.value})}
-                          placeholder="Как вас зовут?"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Тип вопроса</Label>
-                          <select
-                            value={editingQuestion.questionType}
-                            onChange={(e) => setEditingQuestion({...editingQuestion, questionType: e.target.value})}
-                            className="w-full px-3 py-2 border rounded-md"
-                          >
-                            <option value="text">Текст (одна строка)</option>
-                            <option value="textarea">Текст (несколько строк)</option>
-                            <option value="number">Число</option>
-                            <option value="radio">Выбор одного варианта</option>
-                            <option value="checkbox">Выбор нескольких</option>
-                            <option value="select">Выпадающий список</option>
-                          </select>
-                        </div>
-
-                        <div className="flex items-center gap-4 pt-6">
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={editingQuestion.isRequired}
-                              onChange={(e) => setEditingQuestion({...editingQuestion, isRequired: e.target.checked})}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">Обязательный</span>
-                          </label>
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={editingQuestion.isActive}
-                              onChange={(e) => setEditingQuestion({...editingQuestion, isActive: e.target.checked})}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">Активен</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {['radio', 'checkbox', 'select'].includes(editingQuestion.questionType) && (
-                        <div>
-                          <Label>Варианты ответов (каждый с новой строки)</Label>
-                          <Textarea
-                            value={editingQuestion.options?.join('\n') || ''}
-                            onChange={(e) => setEditingQuestion({
-                              ...editingQuestion, 
-                              options: e.target.value.split('\n').filter(o => o.trim())
-                            })}
-                            placeholder="Вариант 1&#10;Вариант 2&#10;Вариант 3"
-                            rows={5}
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 pt-4">
-                        <Button onClick={handleSaveQuestion} disabled={loading} className="flex-1">
-                          {loading ? 'Сохранение...' : 'Сохранить'}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setEditingQuestion(null);
-                            setIsQuestionDialogOpen(false);
-                          }}
-                        >
-                          Отмена
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Вопрос</TableHead>
-                    <TableHead>Тип</TableHead>
-                    <TableHead className="w-24 text-center">Обяз.</TableHead>
-                    <TableHead className="w-24 text-center">Статус</TableHead>
-                    <TableHead className="w-32 text-right">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {questions.map((question, index) => (
-                    <TableRow key={question.id}>
-                      <TableCell className="font-mono text-muted-foreground">
-                        {question.displayOrder}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {question.questionText}
-                        {question.options && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {question.options.slice(0, 3).join(', ')}
-                            {question.options.length > 3 && '...'}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {question.questionType === 'text' && 'Текст'}
-                          {question.questionType === 'textarea' && 'Многострочный'}
-                          {question.questionType === 'number' && 'Число'}
-                          {question.questionType === 'radio' && 'Один вариант'}
-                          {question.questionType === 'checkbox' && 'Множественный'}
-                          {question.questionType === 'select' && 'Список'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {question.isRequired ? (
-                          <Badge variant="destructive" className="text-xs">Да</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">Нет</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {question.isActive ? (
-                          <Badge className="bg-green-500 text-xs">Активен</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">Неактивен</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMoveQuestion(question.id, 'up')}
-                            disabled={index === 0}
-                          >
-                            <Icon name="ChevronUp" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMoveQuestion(question.id, 'down')}
-                            disabled={index === questions.length - 1}
-                          >
-                            <Icon name="ChevronDown" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingQuestion(question);
-                              setIsQuestionDialogOpen(true);
-                            }}
-                          >
-                            <Icon name="Pencil" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteQuestion(question.id)}
-                          >
-                            <Icon name="Trash2" size={16} />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+          <TabsContent value="sync">
+            <AdminSyncTab
+              syncSettings={syncSettings}
+              syncLogs={syncLogs}
+              loading={loading}
+              onRunSync={handleRunSync}
+              onToggleSyncActive={handleToggleSyncActive}
+              onSaveSyncSetting={handleSaveSyncSetting}
+              onDeleteSyncSetting={handleDeleteSyncSetting}
+              onLoadSyncLogs={loadSyncLogs}
+              editingSyncSetting={editingSyncSetting}
+              setEditingSyncSetting={setEditingSyncSetting}
+            />
           </TabsContent>
         </Tabs>
       </div>
