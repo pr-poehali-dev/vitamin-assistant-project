@@ -22,8 +22,9 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
               <span className="block text-primary mt-2">для вашего здоровья</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0">Умная система анализирует ваш образ жизни, питание и цели, чтобы подобрать идеальный комплекс витаминов и добавок
-Бесплатно. Онлайн. За 5 минут.</p>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0">
+              Умная система анализирует ваш образ жизни, питание и цели, чтобы подобрать идеальный комплекс витаминов и добавок
+            </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
               {onViewProfile ? (

@@ -66,7 +66,7 @@ const Benefits = () => {
           <div className="text-muted-foreground">Точность рекомендаций</div>
         </div>
         <div className="animate-fade-in" style={{ animationDelay: '600ms' }}>
-          <div className="text-4xl font-bold text-primary mb-2">60+</div>
+          <div className="text-4xl font-bold text-primary mb-2">200+</div>
           <div className="text-muted-foreground">Витаминов в каталоге</div>
         </div>
       </div>
