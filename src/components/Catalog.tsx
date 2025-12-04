@@ -220,8 +220,9 @@ const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
           {filteredProducts.map((product, index) => (
             <Card 
               key={product.id} 
-              className="p-6 hover-scale transition-all duration-300 animate-fade-in"
+              className="p-6 hover-scale transition-all duration-300 animate-fade-in cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => onProductClick?.(product.id)}
             >
               <div className="relative mb-4">
                 {product.popular && (
@@ -249,12 +250,7 @@ const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
                 )}
               </div>
               
-              <h3 
-                className="text-xl font-semibold mb-2 cursor-pointer hover:text-primary transition-colors"
-                onClick={() => onProductClick?.(product.id)}
-              >
-                {product.name}
-              </h3>
+              <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
               <div className="flex items-center gap-2 mb-3">
                 <Badge variant="outline" className="text-xs">{product.category}</Badge>
               </div>
