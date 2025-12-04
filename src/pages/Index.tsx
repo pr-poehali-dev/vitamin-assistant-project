@@ -71,14 +71,10 @@ const Index = () => {
     setCurrentView('profile');
   };
 
-  const handleCheckout = () => {
-    const recommendedItems = [
-      { id: 1, name: 'Витамин D3', price: 890, quantity: 1, emoji: '☀️' },
-      { id: 2, name: 'Омега-3 премиум', price: 1590, quantity: 1, emoji: '🐟' },
-      { id: 3, name: 'Магний цитрат', price: 690, quantity: 1, emoji: '🌙' },
-      { id: 4, name: 'B-комплекс', price: 790, quantity: 1, emoji: '⚡' }
-    ];
-    setCheckoutItems(recommendedItems);
+  const handleCheckout = (items?: Array<{id: number; name: string; price: number; quantity: number; emoji: string}>) => {
+    if (items) {
+      setCheckoutItems(items);
+    }
     setCurrentView('checkout');
   };
 

@@ -11,7 +11,7 @@ import { getRecommendationsHistory, deleteRecommendation, formatDate } from '@/s
 interface ProfileProps {
   data: SurveyData;
   onBack: () => void;
-  onCheckout: () => void;
+  onCheckout: (items?: Array<{id: number; name: string; price: number; quantity: number; emoji: string}>) => void;
 }
 
 const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
@@ -406,7 +406,7 @@ const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
                   <p className="text-4xl font-bold">{totalPrice.toLocaleString()} ₽</p>
                   <p className="text-sm text-muted-foreground mt-1">Курс на 2-3 месяца</p>
                 </div>
-                <Button size="lg" className="rounded-full px-8" onClick={onCheckout}>
+                <Button size="lg" className="rounded-full px-8" onClick={() => onCheckout(recommendedVitamins)}>
                   Оформить заказ
                   <Icon name="ArrowRight" className="ml-2" size={20} />
                 </Button>
