@@ -97,6 +97,11 @@ const Index = () => {
     setCurrentView('productDetail');
   };
 
+  const handleCheckoutFromCatalog = (items: Array<{id: number; name: string; price: number; quantity: number; emoji: string}>) => {
+    setCheckoutItems(items);
+    setCurrentView('checkout');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-secondary/20 to-muted/30">
       {currentView === 'home' && (
@@ -123,7 +128,11 @@ const Index = () => {
       )}
       
       {currentView === 'catalog' && (
-        <Catalog onBack={handleBackToHome} onProductClick={handleViewProduct} />
+        <Catalog 
+          onBack={handleBackToHome} 
+          onProductClick={handleViewProduct}
+          onCheckout={handleCheckoutFromCatalog}
+        />
       )}
 
       {currentView === 'productDetail' && selectedProductId && (

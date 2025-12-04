@@ -9,6 +9,7 @@ import Icon from '@/components/ui/icon';
 interface CatalogProps {
   onBack: () => void;
   onProductClick?: (productId: number) => void;
+  onCheckout?: (items: Array<{id: number; name: string; price: number; quantity: number; emoji: string}>) => void;
 }
 
 interface Product {
@@ -26,7 +27,7 @@ interface Product {
   mainImage?: string;
 }
 
-const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
+const Catalog = ({ onBack, onProductClick, onCheckout }: CatalogProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<number[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -302,7 +303,23 @@ const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
                     {products.filter(p => cart.includes(p.id)).reduce((sum, p) => sum + p.price, 0)} ₽
                   </div>
                 </div>
-                <Button variant="secondary" size="lg" className="ml-4 rounded-full">
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  className="ml-4 rounded-full"
+                  onClick={() => {
+                    const cartItems = displayProducts
+                      .filter(p => cart.includes(p.id))
+                      .map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        quantity: 1,
+                        emoji: p.emoji
+                      }));
+                    onCheckout?.(cartItems);
+                  }}
+                >
                   Оформить заказ
                   <Icon name="ArrowRight" className="ml-2" size={18} />
                 </Button>
