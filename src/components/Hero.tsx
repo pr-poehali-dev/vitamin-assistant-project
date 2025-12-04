@@ -99,7 +99,7 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
                   <div className="bg-gradient-to-br from-secondary/80 to-secondary/60 rounded-2xl p-6 text-center">
                     <div className="text-4xl mb-2">🥗</div>
                     <div className="font-semibold text-foreground">Питание</div>
-                    <div className="text-sm text-muted-foreground mt-1">Рацион</div>
+                    <div className="text-sm text-muted-foreground mt-1">Ваш рацион</div>
                   </div>
                   <div className="bg-gradient-to-br from-accent/80 to-accent/60 rounded-2xl p-6 text-center">
                     <div className="text-4xl mb-2">💪</div>
@@ -109,7 +109,7 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
                   <div className="bg-gradient-to-br from-muted/80 to-muted/60 rounded-2xl p-6 text-center">
                     <div className="text-4xl mb-2">🎯</div>
                     <div className="font-semibold text-foreground">Цели</div>
-                    <div className="text-sm text-muted-foreground mt-1">Результат</div>
+                    <div className="text-sm text-muted-foreground mt-1">Желаемый результат</div>
                   </div>
                 </div>
               </div>
