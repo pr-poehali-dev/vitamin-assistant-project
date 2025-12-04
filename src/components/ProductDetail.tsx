@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
@@ -38,10 +39,50 @@ const ProductDetail = ({ productId, onBack }: ProductDetailProps) => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
+  const [isInCart, setIsInCart] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     loadProduct();
+    loadCartStatus();
+    loadFavoriteStatus();
   }, [productId]);
+
+  const loadCartStatus = () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setIsInCart(cart.includes(productId));
+  };
+
+  const loadFavoriteStatus = () => {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    setIsFavorite(favorites.includes(productId));
+  };
+
+  const toggleCart = () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (isInCart) {
+      const newCart = cart.filter((id: number) => id !== productId);
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      setIsInCart(false);
+    } else {
+      cart.push(productId);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      setIsInCart(true);
+    }
+  };
+
+  const toggleFavorite = () => {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    if (isFavorite) {
+      const newFavorites = favorites.filter((id: number) => id !== productId);
+      localStorage.setItem('favorites', JSON.stringify(newFavorites));
+      setIsFavorite(false);
+    } else {
+      favorites.push(productId);
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+      setIsFavorite(true);
+    }
+  };
 
   const loadProduct = async () => {
     try {
@@ -188,14 +229,24 @@ const ProductDetail = ({ productId, onBack }: ProductDetailProps) => {
                 </div>
               </div>
 
-              <Button size="lg" className="w-full mb-2">
-                <Icon name="ShoppingCart" size={20} className="mr-2" />
-                Добавить в корзину ({product.price * quantity} ₽)
+              <Button 
+                size="lg" 
+                className="w-full mb-2"
+                onClick={toggleCart}
+                variant={isInCart ? "default" : "default"}
+              >
+                <Icon name={isInCart ? "Check" : "ShoppingCart"} size={20} className="mr-2" />
+                {isInCart ? 'В корзине' : `Добавить в корзину (${product.price * quantity} ₽)`}
               </Button>
               
-              <Button variant="outline" size="lg" className="w-full">
-                <Icon name="Heart" size={20} className="mr-2" />
-                В избранное
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="w-full"
+                onClick={toggleFavorite}
+              >
+                <Icon name="Heart" size={20} className="mr-2" fill={isFavorite ? "currentColor" : "none"} />
+                {isFavorite ? 'В избранном' : 'В избранное'}
               </Button>
             </div>
 
