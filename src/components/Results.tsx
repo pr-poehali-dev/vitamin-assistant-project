@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import type { SurveyData } from '@/pages/Index';
+import { analyzeAndRecommend } from '@/services/aiRecommendation';
 
 interface ResultsProps {
   data: SurveyData;
@@ -11,67 +13,43 @@ interface ResultsProps {
 }
 
 const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
-  const recommendations = [
-    {
-      name: 'Витамин D3',
-      dosage: '2000 МЕ',
-      reason: 'Поддержка иммунитета и энергии',
-      emoji: '☀️',
-      priority: 'high'
-    },
-    {
-      name: 'Омега-3',
-      dosage: '1000 мг',
-      reason: 'Здоровье сердца и мозга',
-      emoji: '🐟',
-      priority: 'high'
-    },
-    {
-      name: 'Магний',
-      dosage: '400 мг',
-      reason: 'Снижение стресса, улучшение сна',
-      emoji: '🌙',
-      priority: 'medium'
-    },
-    {
-      name: 'Витамин B-комплекс',
-      dosage: '1 капсула',
-      reason: 'Энергия и работоспособность',
-      emoji: '⚡',
-      priority: 'high'
-    },
-    {
-      name: 'Цинк',
-      dosage: '15 мг',
-      reason: 'Иммунитет и восстановление',
-      emoji: '🛡️',
-      priority: 'medium'
-    },
-    {
-      name: 'Коэнзим Q10',
-      dosage: '100 мг',
-      reason: 'Энергия клеток и антиоксидант',
-      emoji: '💎',
-      priority: 'low'
-    }
-  ];
+  const [recommendations, setRecommendations] = useState<Array<{
+    product: any;
+    reason: string;
+    priority: number;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-primary text-primary-foreground';
-      case 'medium': return 'bg-accent text-accent-foreground';
-      case 'low': return 'bg-secondary text-secondary-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
+  useEffect(() => {
+    const loadRecommendations = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('https://functions.poehali.dev/6278c723-8882-4348-a57b-4a0136730417');
+        const catalogData = await response.json();
+        const products = catalogData.products || [];
+        
+        const aiRecommendations = await analyzeAndRecommend(data, products);
+        setRecommendations(aiRecommendations);
+      } catch (error) {
+        console.error('Error loading recommendations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecommendations();
+  }, [data]);
+
+  const getPriorityColor = (priority: number) => {
+    if (priority >= 5) return 'bg-primary text-primary-foreground';
+    if (priority >= 3) return 'bg-accent text-accent-foreground';
+    return 'bg-secondary text-secondary-foreground';
   };
 
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'Необходимо';
-      case 'medium': return 'Рекомендовано';
-      case 'low': return 'Опционально';
-      default: return '';
-    }
+  const getPriorityLabel = (priority: number) => {
+    if (priority >= 5) return 'Необходимо';
+    if (priority >= 3) return 'Рекомендовано';
+    return 'Опционально';
   };
 
   return (
@@ -108,36 +86,53 @@ const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
 
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6">Рекомендованные витамины</h2>
-          <div className="grid gap-4">
-            {recommendations.map((item, index) => (
-              <Card 
-                key={index} 
-                className="p-6 hover-scale transition-all duration-300 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">{item.emoji}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold">{item.name}</h3>
-                      <Badge className={getPriorityColor(item.priority)}>
-                        {getPriorityLabel(item.priority)}
-                      </Badge>
+          
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Icon name="Loader2" size={48} className="animate-spin text-primary" />
+            </div>
+          ) : recommendations.length === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">Не удалось подобрать витамины. Попробуйте пройти анкету заново.</p>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {recommendations.map((item, index) => (
+                <Card 
+                  key={index} 
+                  className="p-6 hover-scale transition-all duration-300 animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">{item.product.emoji || '💊'}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold">{item.product.name}</h3>
+                        <Badge className={getPriorityColor(item.priority)}>
+                          {getPriorityLabel(item.priority)}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground mb-2">{item.reason}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Icon name="Pill" size={16} className="text-primary" />
+                          <span className="font-medium">{item.product.dosage}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Icon name="Package" size={16} className="text-primary" />
+                          <span className="text-muted-foreground">{item.product.count}</span>
+                        </div>
+                        <span className="font-semibold text-primary ml-auto">{item.product.price} ₽</span>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground mb-2">{item.reason}</p>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Icon name="Pill" size={16} className="text-primary" />
-                      <span className="font-medium">{item.dosage}</span>
-                      <span className="text-muted-foreground">ежедневно</span>
-                    </div>
+                    <Button variant="outline" size="sm" className="rounded-full">
+                      <Icon name="Plus" size={16} />
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" className="rounded-full">
-                    <Icon name="Plus" size={16} />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         <Card className="p-8 bg-gradient-to-br from-primary/5 to-muted/30 border-0 shadow-lg">
