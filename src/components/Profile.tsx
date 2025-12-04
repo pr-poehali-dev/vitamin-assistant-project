@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { SurveyData } from '@/pages/Index';
 import { getRecommendationsHistory, deleteRecommendation, formatDate } from '@/services/recommendationsHistory';
+import { getSynergies } from '@/services/vitaminRecommendations';
 
 interface ProfileProps {
   data: SurveyData;
@@ -51,24 +52,20 @@ const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
 
   const totalPrice = recommendedVitamins.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const synergies = [
-    {
-      combo: 'D3 + Омега-3',
-      effect: 'Омега-3 улучшает усвоение витамина D3, усиливая противовоспалительный эффект'
-    },
-    {
-      combo: 'B-комплекс + Магний',
-      effect: 'Магний активирует витамины группы B, повышая энергетический потенциал'
-    },
-    {
-      combo: 'D3 + Магний',
-      effect: 'Магний необходим для преобразования D3 в активную форму'
-    }
-  ];
+  const productNames = recommendedVitamins.map(v => v.name);
+  const synergies = getSynergies(productNames);
+
+  const morningVitamins = recommendedVitamins
+    .filter(v => !v.name.toLowerCase().includes('магний') && !v.name.toLowerCase().includes('мелатонин'))
+    .map(v => v.name);
+  
+  const eveningVitamins = recommendedVitamins
+    .filter(v => v.name.toLowerCase().includes('магний') || v.name.toLowerCase().includes('мелатонин'))
+    .map(v => v.name);
 
   const schedule = [
-    { time: '8:00 - 9:00', items: ['Витамин D3', 'B-комплекс', 'Омега-3'], meal: 'С завтраком' },
-    { time: '22:00 - 23:00', items: ['Магний цитрат'], meal: 'За час до сна' }
+    ...(morningVitamins.length > 0 ? [{ time: '8:00 - 9:00', items: morningVitamins, meal: 'С завтраком' }] : []),
+    ...(eveningVitamins.length > 0 ? [{ time: '22:00 - 23:00', items: eveningVitamins, meal: 'За час до сна' }] : [])
   ];
 
   return (

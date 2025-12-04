@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import type { SurveyData } from '@/pages/Index';
-import { analyzeAndRecommend } from '@/services/aiRecommendation';
+import { calculateRecommendations, getSynergies } from '@/services/vitaminRecommendations';
 
 interface ResultsProps {
   data: SurveyData;
@@ -16,7 +16,7 @@ const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
   const [recommendations, setRecommendations] = useState<Array<{
     product: any;
     reason: string;
-    priority: number;
+    score: number;
   }>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,11 +28,11 @@ const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
         const catalogData = await response.json();
         const products = catalogData.products || [];
         
-        const aiRecommendations = await analyzeAndRecommend(data, products);
-        setRecommendations(aiRecommendations);
+        const smartRecommendations = calculateRecommendations(data, products);
+        setRecommendations(smartRecommendations);
         
         const { saveRecommendations } = await import('@/services/recommendationsHistory');
-        saveRecommendations(data, aiRecommendations);
+        saveRecommendations(data, smartRecommendations);
       } catch (error) {
         console.error('Error loading recommendations:', error);
       } finally {
@@ -43,15 +43,15 @@ const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
     loadRecommendations();
   }, [data]);
 
-  const getPriorityColor = (priority: number) => {
-    if (priority >= 5) return 'bg-primary text-primary-foreground';
-    if (priority >= 3) return 'bg-accent text-accent-foreground';
+  const getPriorityColor = (score: number) => {
+    if (score >= 30) return 'bg-primary text-primary-foreground';
+    if (score >= 15) return 'bg-accent text-accent-foreground';
     return 'bg-secondary text-secondary-foreground';
   };
 
-  const getPriorityLabel = (priority: number) => {
-    if (priority >= 5) return 'Необходимо';
-    if (priority >= 3) return 'Рекомендовано';
+  const getPriorityLabel = (score: number) => {
+    if (score >= 30) return 'Необходимо';
+    if (score >= 15) return 'Рекомендовано';
     return 'Опционально';
   };
 
@@ -111,8 +111,8 @@ const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold">{item.product.name}</h3>
-                        <Badge className={getPriorityColor(item.priority)}>
-                          {getPriorityLabel(item.priority)}
+                        <Badge className={getPriorityColor(item.score)}>
+                          {getPriorityLabel(item.score)}
                         </Badge>
                       </div>
                       <p className="text-muted-foreground mb-2">{item.reason}</p>
