@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { SurveyData } from '@/pages/Index';
+import { getRecommendationsHistory, deleteRecommendation, formatDate } from '@/services/recommendationsHistory';
 
 interface ProfileProps {
   data: SurveyData;
@@ -13,52 +15,39 @@ interface ProfileProps {
 }
 
 const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
-  const recommendedVitamins = [
-    {
-      id: 1,
-      name: 'Витамин D3',
-      dosage: '2000 МЕ',
-      count: '90 капсул',
-      price: 890,
-      emoji: '☀️',
-      reason: 'Поддержка иммунитета и настроения',
-      timing: 'Утро с завтраком',
-      quantity: 1
-    },
-    {
-      id: 2,
-      name: 'Омега-3 премиум',
-      dosage: '1000 мг',
-      count: '60 капсул',
-      price: 1590,
-      emoji: '🐟',
-      reason: 'Здоровье сердца и мозга',
-      timing: 'Утро или вечер с едой',
-      quantity: 1
-    },
-    {
-      id: 3,
-      name: 'Магний цитрат',
-      dosage: '400 мг',
-      count: '100 таблеток',
-      price: 690,
-      emoji: '🌙',
-      reason: 'Качественный сон и снятие стресса',
-      timing: 'Вечер за час до сна',
-      quantity: 1
-    },
-    {
-      id: 4,
-      name: 'B-комплекс',
-      dosage: 'Комплекс',
-      count: '60 капсул',
-      price: 790,
-      emoji: '⚡',
-      reason: 'Энергия и работа нервной системы',
-      timing: 'Утро с завтраком',
-      quantity: 1
+  const [history, setHistory] = useState<any[]>([]);
+  const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = () => {
+    const historyData = getRecommendationsHistory();
+    setHistory(historyData);
+    if (historyData.length > 0 && !selectedHistory) {
+      setSelectedHistory(historyData[0]);
     }
-  ];
+  };
+
+  const handleDeleteHistory = (id: number) => {
+    if (confirm('Удалить эту историю рекомендаций?')) {
+      deleteRecommendation(id);
+      loadHistory();
+    }
+  };
+
+  const recommendedVitamins = selectedHistory?.recommendations.map((rec: any) => ({
+    id: rec.product.id,
+    name: rec.product.name,
+    dosage: rec.product.dosage,
+    count: rec.product.count,
+    price: rec.product.price,
+    emoji: rec.product.emoji || '💊',
+    reason: rec.reason,
+    timing: 'По инструкции',
+    quantity: 1
+  })) || [];
 
   const totalPrice = recommendedVitamins.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -101,14 +90,68 @@ const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
           </Badge>
         </div>
 
+        {/* История рекомендаций */}
+        {history.length > 1 && (
+          <div className="mb-8 animate-fade-in">
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <Icon name="History" size={24} className="text-primary" />
+              История рекомендаций
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {history.map((item, index) => (
+                <Card
+                  key={item.id}
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedHistory?.id === item.id
+                      ? 'border-primary border-2 shadow-lg'
+                      : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => setSelectedHistory(item)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon name="FileText" size={18} className="text-primary" />
+                      <Badge variant={selectedHistory?.id === item.id ? 'default' : 'outline'}>
+                        {index === 0 ? 'Актуальный' : formatDate(item.created_at)}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteHistory(item.id);
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Icon name="Trash2" size={14} />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Icon name="Target" size={14} />
+                      <span className="line-clamp-1">{item.survey_data.goals.slice(0, 2).join(', ')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Icon name="Package" size={14} />
+                      <span>{item.recommendations.length} витаминов</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Ваш курс витаминов */}
-        <div className="mb-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Icon name="Sparkles" size={24} className="text-primary" />
-            Ваш персональный курс
-          </h2>
-          <div className="grid gap-4">
-            {recommendedVitamins.map((vitamin, index) => (
+        {recommendedVitamins.length > 0 ? (
+          <div className="mb-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <Icon name="Sparkles" size={24} className="text-primary" />
+              Ваш персональный курс
+            </h2>
+            <div className="grid gap-4">
+              {recommendedVitamins.map((vitamin, index) => (
               <Card 
                 key={vitamin.id} 
                 className="p-6 hover-scale animate-fade-in"
@@ -142,9 +185,21 @@ const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
             ))}
           </div>
         </div>
+        ) : (
+          <Card className="p-8 text-center mb-8">
+            <Icon name="ClipboardList" size={48} className="mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold mb-2">История рекомендаций пуста</h3>
+            <p className="text-muted-foreground mb-4">Пройдите анкету, чтобы получить персональные рекомендации</p>
+            <Button onClick={onBack}>
+              <Icon name="ArrowLeft" size={18} className="mr-2" />
+              Вернуться на главную
+            </Button>
+          </Card>
+        )}
 
         {/* FAQ секция */}
-        <div className="mb-8 animate-fade-in" style={{ animationDelay: '200ms' }}>
+        {recommendedVitamins.length > 0 && (
+          <div className="mb-8 animate-fade-in" style={{ animationDelay: '200ms' }}>
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
             <Icon name="MessageCircleQuestion" size={24} className="text-primary" />
             Частые вопросы о вашем курсе
@@ -315,9 +370,11 @@ const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
             </AccordionItem>
           </Accordion>
         </div>
+        )}
 
         {/* Корзина */}
-        <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
+        {recommendedVitamins.length > 0 && (
+          <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
           <Card className="p-8 bg-gradient-to-br from-primary/5 to-secondary/5 border-2">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Icon name="ShoppingBag" size={24} className="text-primary" />
@@ -372,6 +429,7 @@ const Profile = ({ data, onBack, onCheckout }: ProfileProps) => {
             </div>
           </Card>
         </div>
+        )}
       </div>
     </div>
   );

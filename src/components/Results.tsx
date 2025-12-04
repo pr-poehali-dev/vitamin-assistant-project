@@ -30,6 +30,9 @@ const Results = ({ data, onViewCatalog, onBack }: ResultsProps) => {
         
         const aiRecommendations = await analyzeAndRecommend(data, products);
         setRecommendations(aiRecommendations);
+        
+        const { saveRecommendations } = await import('@/services/recommendationsHistory');
+        saveRecommendations(data, aiRecommendations);
       } catch (error) {
         console.error('Error loading recommendations:', error);
       } finally {
