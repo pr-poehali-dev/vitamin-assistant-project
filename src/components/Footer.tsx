@@ -1,12 +1,15 @@
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 
-interface FooterProps {
-  onNavigate?: (page: 'about' | 'partners') => void;
-}
+export const companyInfo = {
+  name: 'ООО "Витамин Ассистент"',
+  inn: '1234567890',
+  ogrn: '1234567890123'
+};
 
-const Footer = ({ onNavigate }: FooterProps) => {
+const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -15,11 +18,14 @@ const Footer = ({ onNavigate }: FooterProps) => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Компания */}
           <div>
-            <h3 className="font-bold text-lg mb-4">VitaMatch</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Icon name="Heart" className="text-primary" size={28} />
+              <span className="text-xl font-bold">Витамин Ассистент</span>
+            </div>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>ООО "ВитаМатч"</p>
-              <p>ИНН: 1234567890</p>
-              <p>ОГРН: 1234567890123</p>
+              <p>{companyInfo.name}</p>
+              <p>ИНН: {companyInfo.inn}</p>
+              <p>ОГРН: {companyInfo.ogrn}</p>
             </div>
           </div>
 
@@ -31,24 +37,24 @@ const Footer = ({ onNavigate }: FooterProps) => {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/documents/offer" className="text-muted-foreground hover:text-primary transition-colors">
                   Договор оферты
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/documents/terms" className="text-muted-foreground hover:text-primary transition-colors">
                   Пользовательское соглашение
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/documents/privacy" className="text-muted-foreground hover:text-primary transition-colors">
                   Политика конфиденциальности
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/documents/disclaimer" className="text-muted-foreground hover:text-primary transition-colors">
                   Отказ от ответственности
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -58,20 +64,19 @@ const Footer = ({ onNavigate }: FooterProps) => {
             <h3 className="font-bold text-lg mb-4">Компания</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <button 
-                  onClick={() => onNavigate?.('about')}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
+                <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">
                   О нас
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('partners')}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
+                <Link to="/partnership" className="text-muted-foreground hover:text-primary transition-colors">
                   Партнерская программа
-                </button>
+                </Link>
+              </li>
+              <li>
+                <Link to="/catalog" className="text-muted-foreground hover:text-primary transition-colors">
+                  Каталог витаминов
+                </Link>
               </li>
             </ul>
           </div>
@@ -137,7 +142,7 @@ const Footer = ({ onNavigate }: FooterProps) => {
         </Card>
 
         <div className="text-center mt-8 text-sm text-muted-foreground">
-          <p>© {currentYear} VitaMatch. Все права защищены.</p>
+          <p>© {new Date().getFullYear()} Витамин Ассистент. Все права защищены.</p>
         </div>
       </div>
     </footer>

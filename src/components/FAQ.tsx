@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import {
@@ -8,7 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const defaultFaqs = [
+export const defaultFaqs = [
   {
     id: 'faq-1',
     question: 'Где вы производите витамины?',
@@ -27,8 +26,6 @@ const defaultFaqs = [
 ];
 
 const FAQ = () => {
-  const [faqs] = useState(defaultFaqs);
-
   return (
     <section className="container mx-auto px-4 py-16 md:py-24 bg-gradient-to-b from-muted/30 to-background">
       <div className="text-center mb-12 animate-fade-in">
@@ -43,7 +40,7 @@ const FAQ = () => {
       <div className="max-w-3xl mx-auto">
         <Card className="p-6 shadow-lg animate-fade-in" style={{ animationDelay: '100ms' }}>
           <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
+            {defaultFaqs.map((faq, index) => (
               <AccordionItem 
                 key={faq.id} 
                 value={faq.id}

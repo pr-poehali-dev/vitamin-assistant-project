@@ -23,6 +23,7 @@ interface Product {
   popular: boolean;
   inStock: boolean;
   description?: string;
+  mainImage?: string;
 }
 
 const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
@@ -225,21 +226,32 @@ const Catalog = ({ onBack, onProductClick }: CatalogProps) => {
             >
               <div className="relative mb-4">
                 {product.popular && (
-                  <Badge className="absolute top-0 right-0">
+                  <Badge className="absolute top-2 right-2 z-10">
                     <Icon name="TrendingUp" size={12} className="mr-1" />
                     Популярное
                   </Badge>
                 )}
-                <div className="text-6xl mb-4">{product.emoji}</div>
+                {product.mainImage ? (
+                  <div className="w-full h-48 rounded-lg overflow-hidden bg-muted mb-4">
+                    <img 
+                      src={product.mainImage} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-6xl">' + product.emoji + '</div>';
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-48 flex items-center justify-center text-6xl mb-4">
+                    {product.emoji}
+                  </div>
+                )}
               </div>
               
               <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
               <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-1">
-                  <Icon name="Star" size={16} className="text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-medium">{product.rating}</span>
-                </div>
-                <span className="text-muted-foreground text-sm">•</span>
                 <Badge variant="outline" className="text-xs">{product.category}</Badge>
               </div>
               

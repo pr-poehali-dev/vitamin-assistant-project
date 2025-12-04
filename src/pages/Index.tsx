@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
+import HowItWorks from '@/components/HowItWorks';
 import Benefits from '@/components/Benefits';
+import FAQ from '@/components/FAQ';
+import SocialSubscribe from '@/components/SocialSubscribe';
+import Footer from '@/components/Footer';
 import Survey from '@/components/Survey';
 import Results from '@/components/Results';
 import Catalog from '@/components/Catalog';
@@ -102,7 +106,11 @@ const Index = () => {
             onViewCatalog={handleViewCatalog}
             onViewProfile={surveyData ? handleViewProfile : undefined}
           />
+          <HowItWorks onStartSurvey={handleStartSurvey} />
           <Benefits />
+          <FAQ />
+          <SocialSubscribe />
+          <Footer />
         </>
       )}
       

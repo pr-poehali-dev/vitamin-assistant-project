@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 
-const benefits = [
+export const benefits = [
   {
     icon: 'Brain',
     title: 'Умный алгоритм',

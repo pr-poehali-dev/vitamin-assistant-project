@@ -6,7 +6,16 @@ interface HowItWorksProps {
   onStartSurvey: () => void;
 }
 
-const steps = [
+interface Step {
+  number: number;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  features?: string[];
+}
+
+const steps: Step[] = [
   {
     number: 1,
     title: 'Нажмите кнопку "Пройти опрос"',
@@ -17,10 +26,16 @@ const steps = [
   {
     number: 2,
     title: 'Заполните анкету',
-    description: 'Выберите ваши цели\nУкажите личные параметры\nПитание\nОбраз жизни\nЖалобы',
-    time: 'Среднее время заполнения 10 минут',
+    description: 'Среднее время заполнения 10 минут',
     icon: 'ClipboardList',
-    color: 'from-secondary/60 to-secondary/20'
+    color: 'from-secondary/60 to-secondary/20',
+    features: [
+      'Выберите ваши цели',
+      'Укажите личные параметры',
+      'Питание',
+      'Образ жизни',
+      'Жалобы'
+    ]
   },
   {
     number: 3,
@@ -65,16 +80,23 @@ const HowItWorks = ({ onStartSurvey }: HowItWorksProps) => {
                 </div>
               </div>
               
-              <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-              <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
-                {step.description}
-              </p>
-              
-              {step.time && (
-                <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm">
-                  <Icon name="Clock" size={16} />
-                  <span className="font-medium">{step.time}</span>
+              <div className="mb-4">
+                <div className="inline-block px-3 py-1 bg-primary/10 rounded-full text-sm font-semibold text-primary mb-3">
+                  Шаг {step.number}
                 </div>
+                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                <p className="text-muted-foreground">{step.description}</p>
+              </div>
+
+              {step.features && (
+                <ul className="space-y-2 mt-4">
+                  {step.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm">
+                      <Icon name="Check" size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </Card>
