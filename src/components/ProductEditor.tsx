@@ -115,6 +115,49 @@ const ProductEditor = ({ product, onChange, onSave, onCancel, loading }: Product
     onChange({...product, recommendation_tags: newTags});
   };
 
+  const tagMapping: Record<string, string[]> = {
+    'vitamin_d3': ['витамин d', 'витамин д', 'холекальциферол', 'cholecalciferol', 'vitamin d3', 'vitamin d'],
+    'omega_3': ['омега-3', 'омега 3', 'omega-3', 'omega 3', 'эпк', 'дгк', 'epa', 'dha', 'рыбий жир'],
+    'magnesium': ['магний', 'magnesium', 'цитрат магния', 'оксид магния', 'magnesium citrate'],
+    'b_complex': ['витамин b', 'витамин в', 'b-комплекс', 'b complex', 'тиамин', 'рибофлавин', 'ниацин', 'b1', 'b2', 'b3', 'b6', 'b12', 'фолиевая', 'folic'],
+    'vitamin_c': ['витамин c', 'витамин с', 'аскорбиновая', 'ascorbic', 'vitamin c'],
+    'zinc': ['цинк', 'zinc'],
+    'coq10': ['коэнзим', 'q10', 'coq10', 'убихинон', 'coenzyme'],
+    'iron': ['железо', 'iron', 'феррум'],
+    'curcumin': ['куркумин', 'curcumin', 'куркума', 'turmeric'],
+    'probiotics': ['пробиотик', 'probiotics', 'лактобактерии', 'бифидобактерии', 'lactobacillus', 'bifidobacterium'],
+    'collagen': ['коллаген', 'collagen'],
+    'ashwagandha': ['ашваганда', 'ашвагандха', 'ashwagandha', 'withania'],
+    'l_theanine': ['л-теанин', 'l-theanine', 'теанин', 'theanine'],
+    'melatonin': ['мелатонин', 'melatonin'],
+    'creatine': ['креатин', 'creatine'],
+    'rhodiola': ['родиола', 'rhodiola', 'золотой корень']
+  };
+
+  const autoDetectTags = () => {
+    if (!product.compositionTable || product.compositionTable.length === 0) return;
+
+    const detectedTags = new Set<string>();
+    const compositionText = product.compositionTable
+      .map(row => row.component.toLowerCase())
+      .join(' ');
+
+    Object.entries(tagMapping).forEach(([tag, keywords]) => {
+      const hasMatch = keywords.some(keyword => 
+        compositionText.includes(keyword.toLowerCase())
+      );
+      if (hasMatch) {
+        detectedTags.add(tag);
+      }
+    });
+
+    if (detectedTags.size > 0) {
+      const currentTags = new Set(product.recommendation_tags || []);
+      detectedTags.forEach(tag => currentTags.add(tag));
+      onChange({...product, recommendation_tags: Array.from(currentTags)});
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="basic" className="w-full">
@@ -260,8 +303,21 @@ const ProductEditor = ({ product, onChange, onSave, onCancel, loading }: Product
             </div>
           </Card>
 
-          <div>
+          <div className="flex items-center justify-between">
             <Label>Теги подбора</Label>
+            <Button 
+              type="button" 
+              onClick={autoDetectTags}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Icon name="Sparkles" size={16} />
+              Определить автоматически
+            </Button>
+          </div>
+
+          <div>
             <div className="flex gap-2 mt-2">
               <Input
                 value={newTag}
