@@ -27,6 +27,7 @@ interface Product {
   videos?: Array<{title: string; url: string}>;
   compositionDescription?: string;
   compositionTable?: Array<{component: string; mass: string; percentage: string}>;
+  recommendation_tags?: string[];
 }
 
 interface AdminProductsTabProps {
@@ -59,7 +60,8 @@ const AdminProductsTab = ({
                 id: 0, name: '', category: '', price: 0, dosage: '', count: '', 
                 description: '', emoji: '💊', rating: 0, popular: false, inStock: true,
                 images: [], mainImage: '', aboutDescription: '', aboutUsage: '',
-                documents: [], videos: [], compositionDescription: '', compositionTable: []
+                documents: [], videos: [], compositionDescription: '', compositionTable: [],
+                recommendation_tags: []
               });
               setIsProductDialogOpen(true);
             }}>
