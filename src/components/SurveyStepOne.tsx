@@ -8,6 +8,7 @@ import Icon from '@/components/ui/icon';
 
 interface SurveyStepOneProps {
   onComplete: (data: StepOneData) => void;
+  initialData?: StepOneData;
 }
 
 export interface StepOneData {
@@ -34,9 +35,9 @@ const AVAILABLE_GOALS = [
   'Уровень энергии'
 ];
 
-export default function SurveyStepOne({ onComplete }: SurveyStepOneProps) {
+export default function SurveyStepOne({ onComplete, initialData }: SurveyStepOneProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [formData, setFormData] = useState<StepOneData>({
+  const [formData, setFormData] = useState<StepOneData>(initialData || {
     name: '',
     gender: '',
     birthDate: '',
