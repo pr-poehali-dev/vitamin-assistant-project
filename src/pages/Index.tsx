@@ -6,6 +6,7 @@ import FAQ from '@/components/FAQ';
 import SocialSubscribe from '@/components/SocialSubscribe';
 import Footer from '@/components/Footer';
 import Survey from '@/components/Survey';
+import SurveyPage from '@/pages/SurveyPage';
 import Results from '@/components/Results';
 import Catalog from '@/components/Catalog';
 import Profile from '@/components/Profile';
@@ -26,7 +27,7 @@ export type SurveyData = {
 };
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'survey' | 'results' | 'catalog' | 'profile' | 'checkout' | 'admin' | 'productDetail'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'survey' | 'survey-new' | 'results' | 'catalog' | 'profile' | 'checkout' | 'admin' | 'productDetail'>('home');
   const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
   const [checkoutItems, setCheckoutItems] = useState<Array<{id: number; name: string; price: number; quantity: number; emoji: string}>>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -49,7 +50,7 @@ const Index = () => {
   }, []);
 
   const handleStartSurvey = () => {
-    setCurrentView('survey');
+    setCurrentView('survey-new');
   };
 
   const handleSurveyComplete = (data: SurveyData) => {
@@ -117,6 +118,13 @@ const Index = () => {
       
       {currentView === 'survey' && (
         <Survey onComplete={handleSurveyComplete} onBack={handleBackToHome} />
+      )}
+      
+      {currentView === 'survey-new' && (
+        <SurveyPage onComplete={(userId, surveyId) => {
+          console.log('Survey completed:', { userId, surveyId });
+          setCurrentView('results');
+        }} />
       )}
       
       {currentView === 'results' && surveyData && (
