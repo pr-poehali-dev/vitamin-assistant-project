@@ -169,11 +169,11 @@ const AdminSurveyTab = ({
               <TableHead>Тип</TableHead>
               <TableHead className="w-24 text-center">Обяз.</TableHead>
               <TableHead className="w-24 text-center">Статус</TableHead>
-              <TableHead className="w-32 text-right">Действия</TableHead>
+              <TableHead className="w-40 text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {questions.map((question, index) => (
+            {[...questions].sort((a, b) => a.displayOrder - b.displayOrder).map((question, index) => (
               <TableRow key={question.id}>
                 <TableCell className="font-mono text-muted-foreground">
                   {question.displayOrder}
@@ -218,16 +218,18 @@ const AdminSurveyTab = ({
                       size="sm"
                       onClick={() => onMoveQuestion(question.id, 'up')}
                       disabled={index === 0}
+                      title="Переместить вверх"
                     >
-                      <Icon name="ChevronUp" size={16} />
+                      <Icon name="ArrowUp" size={16} />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onMoveQuestion(question.id, 'down')}
-                      disabled={index === questions.length - 1}
+                      disabled={index === [...questions].sort((a, b) => a.displayOrder - b.displayOrder).length - 1}
+                      title="Переместить вниз"
                     >
-                      <Icon name="ChevronDown" size={16} />
+                      <Icon name="ArrowDown" size={16} />
                     </Button>
                     <Button
                       variant="ghost"

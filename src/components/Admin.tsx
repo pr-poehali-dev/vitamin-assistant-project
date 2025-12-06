@@ -117,9 +117,18 @@ const Admin = ({ onBack }: AdminProps) => {
 
   const loadQuestions = async () => {
     try {
-      const response = await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey');
+      const response = await fetch('https://functions.poehali.dev/a6d2ac27-1d35-4daa-b1e5-e9bbe2ad3a31?action=questions&includeInactive=true');
       const data = await response.json();
-      setQuestions(data.questions || []);
+      const mappedQuestions = (data.questions || []).map((q: any) => ({
+        id: q.id,
+        questionText: q.question_text,
+        questionType: q.question_type,
+        options: q.options,
+        isRequired: q.required,
+        displayOrder: q.order_index,
+        isActive: q.active
+      }));
+      setQuestions(mappedQuestions);
     } catch (error) {
       console.error('Error loading questions:', error);
     }
@@ -190,21 +199,36 @@ const Admin = ({ onBack }: AdminProps) => {
     setLoading(true);
     try {
       const method = editingQuestion.id ? 'PUT' : 'POST';
-      const response = await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey', {
+      const body = {
+        id: editingQuestion.id,
+        category: 'general',
+        question_text: editingQuestion.questionText,
+        question_type: editingQuestion.questionType,
+        options: editingQuestion.options || {},
+        placeholder: '',
+        required: editingQuestion.isRequired,
+        order_index: editingQuestion.displayOrder,
+        active: editingQuestion.isActive
+      };
+
+      const response = await fetch('https://functions.poehali.dev/a6d2ac27-1d35-4daa-b1e5-e9bbe2ad3a31?action=questions', {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingQuestion)
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
       
-      if (data.success) {
+      if (response.ok) {
         alert('Вопрос сохранён');
         loadQuestions();
         setEditingQuestion(null);
+      } else {
+        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
       }
     } catch (error) {
       alert('Ошибка при сохранении вопроса');
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -214,41 +238,69 @@ const Admin = ({ onBack }: AdminProps) => {
     if (!confirm('Удалить вопрос?')) return;
 
     try {
-      await fetch(`https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey&id=${id}`, {
+      await fetch(`https://functions.poehali.dev/a6d2ac27-1d35-4daa-b1e5-e9bbe2ad3a31?action=questions&id=${id}`, {
         method: 'DELETE'
       });
       loadQuestions();
     } catch (error) {
       alert('Ошибка при удалении вопроса');
+      console.error(error);
     }
   };
 
   const handleMoveQuestion = async (id: number, direction: 'up' | 'down') => {
-    const index = questions.findIndex(q => q.id === id);
+    const sortedQuestions = [...questions].sort((a, b) => a.displayOrder - b.displayOrder);
+    const index = sortedQuestions.findIndex(q => q.id === id);
     if (index === -1) return;
     if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === questions.length - 1) return;
+    if (direction === 'down' && index === sortedQuestions.length - 1) return;
 
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    const currentQ = questions[index];
-    const swapQ = questions[newIndex];
+    const currentQ = sortedQuestions[index];
+    const swapQ = sortedQuestions[newIndex];
 
     try {
-      await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey', {
+      // Swap order_index values
+      const response1 = await fetch('https://functions.poehali.dev/a6d2ac27-1d35-4daa-b1e5-e9bbe2ad3a31?action=questions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: currentQ.id, displayOrder: swapQ.displayOrder })
+        body: JSON.stringify({ 
+          id: currentQ.id, 
+          category: 'general',
+          question_text: currentQ.questionText,
+          question_type: currentQ.questionType,
+          options: currentQ.options || {},
+          placeholder: '',
+          required: currentQ.isRequired,
+          order_index: swapQ.displayOrder,
+          active: currentQ.isActive
+        })
       });
 
-      await fetch('https://functions.poehali.dev/91d2a680-560a-4c90-8c01-c525dfc2e2b5?resource=survey', {
+      const response2 = await fetch('https://functions.poehali.dev/a6d2ac27-1d35-4daa-b1e5-e9bbe2ad3a31?action=questions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: swapQ.id, displayOrder: currentQ.displayOrder })
+        body: JSON.stringify({ 
+          id: swapQ.id,
+          category: 'general',
+          question_text: swapQ.questionText,
+          question_type: swapQ.questionType,
+          options: swapQ.options || {},
+          placeholder: '',
+          required: swapQ.isRequired,
+          order_index: currentQ.displayOrder,
+          active: swapQ.isActive
+        })
       });
 
-      loadQuestions();
+      if (response1.ok && response2.ok) {
+        loadQuestions();
+      } else {
+        alert('Ошибка при изменении порядка');
+      }
     } catch (error) {
       alert('Ошибка при изменении порядка');
+      console.error(error);
     }
   };
 
