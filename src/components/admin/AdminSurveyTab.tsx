@@ -180,7 +180,7 @@ const AdminSurveyTab = ({
                 </TableCell>
                 <TableCell className="font-medium">
                   {question.questionText}
-                  {question.options && (
+                  {question.options && Array.isArray(question.options) && question.options.length > 0 && (
                     <div className="text-xs text-muted-foreground mt-1">
                       {question.options.slice(0, 3).join(', ')}
                       {question.options.length > 3 && '...'}
@@ -195,6 +195,8 @@ const AdminSurveyTab = ({
                     {question.questionType === 'radio' && 'Один вариант'}
                     {question.questionType === 'checkbox' && 'Множественный'}
                     {question.questionType === 'select' && 'Список'}
+                    {question.questionType === 'single_choice' && 'Один вариант'}
+                    {question.questionType === 'multiple_choice' && 'Множественный'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">

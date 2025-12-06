@@ -123,11 +123,12 @@ const Admin = ({ onBack }: AdminProps) => {
         id: q.id,
         questionText: q.question_text,
         questionType: q.question_type,
-        options: q.options,
+        options: q.options?.choices || [],
         isRequired: q.required,
         displayOrder: q.order_index,
         isActive: q.active
       }));
+      console.log('Loaded questions:', mappedQuestions);
       setQuestions(mappedQuestions);
     } catch (error) {
       console.error('Error loading questions:', error);
@@ -199,12 +200,16 @@ const Admin = ({ onBack }: AdminProps) => {
     setLoading(true);
     try {
       const method = editingQuestion.id ? 'PUT' : 'POST';
+      const options = editingQuestion.options && editingQuestion.options.length > 0 
+        ? { choices: editingQuestion.options }
+        : {};
+
       const body = {
         id: editingQuestion.id,
         category: 'general',
         question_text: editingQuestion.questionText,
         question_type: editingQuestion.questionType,
-        options: editingQuestion.options || {},
+        options: options,
         placeholder: '',
         required: editingQuestion.isRequired,
         order_index: editingQuestion.displayOrder,
@@ -269,7 +274,7 @@ const Admin = ({ onBack }: AdminProps) => {
           category: 'general',
           question_text: currentQ.questionText,
           question_type: currentQ.questionType,
-          options: currentQ.options || {},
+          options: currentQ.options && currentQ.options.length > 0 ? { choices: currentQ.options } : {},
           placeholder: '',
           required: currentQ.isRequired,
           order_index: swapQ.displayOrder,
@@ -285,7 +290,7 @@ const Admin = ({ onBack }: AdminProps) => {
           category: 'general',
           question_text: swapQ.questionText,
           question_type: swapQ.questionType,
-          options: swapQ.options || {},
+          options: swapQ.options && swapQ.options.length > 0 ? { choices: swapQ.options } : {},
           placeholder: '',
           required: swapQ.isRequired,
           order_index: currentQ.displayOrder,
