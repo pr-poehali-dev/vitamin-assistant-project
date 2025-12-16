@@ -13,9 +13,7 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
       <div className="container mx-auto px-4 py-16 md:py-24">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-6 text-center lg:text-left animate-fade-in">
-            <div className="inline-block px-4 py-2 bg-secondary rounded-full text-sm font-medium text-primary mb-4">
-              AI-помощник по подбору витаминов
-            </div>
+            <div className="inline-block px-4 py-2 bg-secondary rounded-full text-sm font-medium text-primary mb-4">Ассистент-помощник по подбору витаминов</div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               Персональные витамины
