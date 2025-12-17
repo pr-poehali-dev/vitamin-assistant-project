@@ -59,10 +59,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor()
         
         # Проверяем существование survey
-        cur.execute('''
-            SELECT id FROM t_p97156157_vitamin_assistant_pr.user_surveys 
-            WHERE id = %s
-        ''', (survey_id,))
+        cur.execute('SELECT id FROM user_surveys WHERE id = %s', (survey_id,))
         
         if not cur.fetchone():
             cur.close()
@@ -78,7 +75,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         for question_id, answer in answers.items():
             # Определяем, это строка или JSON
             if isinstance(answer, (list, dict)):
-                answer_json_value = answer
+                answer_json_value = json.dumps(answer)
                 answer_text_value = None
             else:
                 answer_json_value = None
@@ -86,38 +83,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Проверяем существование записи
             cur.execute('''
-                SELECT id FROM t_p97156157_vitamin_assistant_pr.survey_answers 
+                SELECT id FROM survey_answers 
                 WHERE survey_id = %s AND question_id = %s
-            ''', (survey_id, question_id))
+            ''', (survey_id, int(question_id)))
             
             existing = cur.fetchone()
             
             if existing:
                 # Обновляем существующую запись
                 cur.execute('''
-                    UPDATE t_p97156157_vitamin_assistant_pr.survey_answers 
+                    UPDATE survey_answers 
                     SET answer_value = %s, answer_json = %s, stage_number = %s
                     WHERE survey_id = %s AND question_id = %s
-                ''', (answer_text_value, json.dumps(answer_json_value) if answer_json_value else None, stage, survey_id, question_id))
+                ''', (answer_text_value, answer_json_value, stage, survey_id, int(question_id)))
             else:
                 # Вставляем новую запись
                 cur.execute('''
-                    INSERT INTO t_p97156157_vitamin_assistant_pr.survey_answers 
+                    INSERT INTO survey_answers 
                     (survey_id, question_id, answer_value, answer_json, stage_number)
                     VALUES (%s, %s, %s, %s, %s)
-                ''', (survey_id, question_id, answer_text_value, json.dumps(answer_json_value) if answer_json_value else None, stage))
+                ''', (survey_id, int(question_id), answer_text_value, answer_json_value, stage))
         
         # Обновляем статус этапа
         if stage == 2:
             cur.execute('''
-                UPDATE t_p97156157_vitamin_assistant_pr.user_surveys 
-                SET stage2_completed = true, stage = 2, updated_at = NOW()
+                UPDATE user_surveys 
+                SET stage2_completed = TRUE, stage = GREATEST(stage, 2), updated_at = NOW()
                 WHERE id = %s
             ''', (survey_id,))
         elif stage == 3:
             cur.execute('''
-                UPDATE t_p97156157_vitamin_assistant_pr.user_surveys 
-                SET stage3_completed = true, stage = 3, completed = true, updated_at = NOW()
+                UPDATE user_surveys 
+                SET stage3_completed = TRUE, stage = 3, completed = TRUE, updated_at = NOW()
                 WHERE id = %s
             ''', (survey_id,))
         

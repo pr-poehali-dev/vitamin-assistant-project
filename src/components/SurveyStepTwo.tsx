@@ -54,7 +54,11 @@ export default function SurveyStepTwo({ stepOneData, onComplete, onBack }: Surve
       const response = await fetch(getSurveyUrl('questions'));
       if (response.ok) {
         const data = await response.json();
-        setQuestions(data.questions || []);
+        // Фильтруем вопросы: исключаем категорию 'nutrition' (она в Этапе 3)
+        const filteredQuestions = (data.questions || []).filter(
+          (q: Question) => q.category !== 'nutrition'
+        );
+        setQuestions(filteredQuestions);
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
