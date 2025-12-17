@@ -5,9 +5,10 @@ interface HeroProps {
   onStartSurvey: () => void;
   onViewCatalog: () => void;
   onViewProfile?: () => void;
+  isAdmin?: boolean;
 }
 
-const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
+const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile, isAdmin = false }: HeroProps) => {
   return (
     <div className="relative overflow-hidden">
       <div className="container mx-auto px-4 py-16 md:py-24">
@@ -43,15 +44,17 @@ const Hero = ({ onStartSurvey, onViewCatalog, onViewProfile }: HeroProps) => {
                   Пройти анкету
                 </Button>
               )}
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-lg px-8 py-6 rounded-full hover-scale"
-                onClick={onViewCatalog}
-              >
-                <Icon name="Package" className="mr-2" size={20} />
-                Каталог витаминов
-              </Button>
+              {isAdmin && (
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="text-lg px-8 py-6 rounded-full hover-scale"
+                  onClick={onViewCatalog}
+                >
+                  <Icon name="Package" className="mr-2" size={20} />
+                  Каталог витаминов
+                </Button>
+              )}
             </div>
             
             <div className="flex items-center gap-8 justify-center lg:justify-start pt-6 text-sm text-muted-foreground flex-wrap">

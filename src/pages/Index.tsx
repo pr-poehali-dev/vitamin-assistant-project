@@ -31,6 +31,7 @@ const Index = () => {
   const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
   const [checkoutItems, setCheckoutItems] = useState<Array<{id: number; name: string; price: number; quantity: number; emoji: string}>>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Загрузка данных из localStorage при монтировании
   useEffect(() => {
@@ -46,6 +47,10 @@ const Index = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'admin') {
       setCurrentView('admin');
+      setIsAdmin(true);
+    }
+    if (params.get('admin') === 'true') {
+      setIsAdmin(true);
     }
   }, []);
 
@@ -107,6 +112,7 @@ const Index = () => {
             onStartSurvey={handleStartSurvey} 
             onViewCatalog={handleViewCatalog}
             onViewProfile={surveyData ? handleViewProfile : undefined}
+            isAdmin={isAdmin}
           />
           <HowItWorks onStartSurvey={handleStartSurvey} />
           <Benefits />
