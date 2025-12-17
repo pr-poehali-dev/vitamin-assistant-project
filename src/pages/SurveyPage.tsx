@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import SurveyStepOne, { StepOneData } from '@/components/SurveyStepOne';
-import SurveyStepTwo from '@/components/SurveyStepTwo';
 import SurveyRestore from '@/components/SurveyRestore';
 import { getSurveyUrl } from '@/config/api';
 
@@ -10,42 +9,32 @@ interface SurveyPageProps {
 
 export default function SurveyPage({ onComplete }: SurveyPageProps) {
   const [view, setView] = useState<'choice' | 'new' | 'restore'>('choice');
-  const [step, setStep] = useState(1);
   const [stepOneData, setStepOneData] = useState<StepOneData | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
-  const [surveyId, setSurveyId] = useState<number | null>(null);
 
   const handleRestore = (data: any) => {
     const user = data.user;
     const survey = data.survey;
 
-    const restoredStepOneData: StepOneData = {
-      name: user.name,
-      email: user.email,
-      gender: user.gender,
-      birthDate: user.birth_date,
-      goals: survey.goals || []
-    };
-
-    setStepOneData(restoredStepOneData);
-    setUserId(user.id);
-    setSurveyId(survey.id);
-
-    if (survey.completed) {
-      alert('Ваша анкета уже завершена! Переходим к результатам.');
+    // Если предварительная анкета уже заполнена, переходим в личный кабинет
+    if (survey.stage >= 1 || survey.completed) {
       onComplete(user.id, survey.id);
-    } else if (survey.stage === 2) {
-      setStep(2);
-      setView('new');
     } else {
-      setStep(1);
+      // Если даже предварительная анкета не заполнена, показываем её
+      const restoredStepOneData: StepOneData = {
+        name: user.name,
+        email: user.email,
+        gender: user.gender,
+        birthDate: user.birth_date,
+        goals: survey.goals || []
+      };
+
+      setStepOneData(restoredStepOneData);
       setView('new');
     }
   };
 
   const handleStartNew = () => {
     setView('new');
-    setStep(1);
   };
 
   const handleStepOneComplete = async (data: StepOneData) => {
@@ -58,10 +47,8 @@ export default function SurveyPage({ onComplete }: SurveyPageProps) {
 
       if (response.ok) {
         const result = await response.json();
-        setUserId(result.user_id);
-        setSurveyId(result.survey_id);
-        setStepOneData(data);
-        setStep(2);
+        // Сразу переходим в личный кабинет после предварительной анкеты
+        onComplete(result.user_id, result.survey_id);
       } else {
         alert('Ошибка при регистрации. Попробуйте снова.');
       }
@@ -71,33 +58,7 @@ export default function SurveyPage({ onComplete }: SurveyPageProps) {
     }
   };
 
-  const handleStepTwoComplete = async (answers: Record<number, any>) => {
-    if (!surveyId) return;
 
-    try {
-      const response = await fetch(getSurveyUrl('submit'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          survey_id: surveyId,
-          answers
-        })
-      });
-
-      if (response.ok && userId && surveyId) {
-        onComplete(userId, surveyId);
-      } else {
-        alert('Ошибка при сохранении анкеты. Попробуйте снова.');
-      }
-    } catch (error) {
-      console.error('Submit error:', error);
-      alert('Ошибка подключения. Проверьте интернет и попробуйте снова.');
-    }
-  };
-
-  const handleBackToStepOne = () => {
-    setStep(1);
-  };
 
   if (view === 'choice') {
     return (
@@ -164,20 +125,9 @@ export default function SurveyPage({ onComplete }: SurveyPageProps) {
   }
 
   return (
-    <>
-      {step === 1 && (
-        <SurveyStepOne 
-          onComplete={handleStepOneComplete}
-          initialData={stepOneData || undefined}
-        />
-      )}
-      {step === 2 && stepOneData && (
-        <SurveyStepTwo
-          stepOneData={stepOneData}
-          onComplete={handleStepTwoComplete}
-          onBack={handleBackToStepOne}
-        />
-      )}
-    </>
+    <SurveyStepOne 
+      onComplete={handleStepOneComplete}
+      initialData={stepOneData || undefined}
+    />
   );
 }
