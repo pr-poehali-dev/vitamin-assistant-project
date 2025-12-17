@@ -58,16 +58,54 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cur = conn.cursor()
         
+        # Проверяем существование survey
+        cur.execute('''
+            SELECT id FROM t_p97156157_vitamin_assistant_pr.user_surveys 
+            WHERE id = %s
+        ''', (survey_id,))
+        
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': f'Survey with id {survey_id} not found'}),
+                'isBase64Encoded': False
+            }
+        
         # Сохраняем ответы
         for question_id, answer in answers.items():
-            answer_json = json.dumps(answer) if isinstance(answer, (list, dict)) else answer
+            # Определяем, это строка или JSON
+            if isinstance(answer, (list, dict)):
+                answer_json_value = answer
+                answer_text_value = None
+            else:
+                answer_json_value = None
+                answer_text_value = str(answer)
             
+            # Проверяем существование записи
             cur.execute('''
-                INSERT INTO t_p97156157_vitamin_assistant_pr.survey_answers (survey_id, question_id, answer, stage_number)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (survey_id, question_id) 
-                DO UPDATE SET answer = EXCLUDED.answer, stage_number = EXCLUDED.stage_number
-            ''', (survey_id, question_id, answer_json, stage))
+                SELECT id FROM t_p97156157_vitamin_assistant_pr.survey_answers 
+                WHERE survey_id = %s AND question_id = %s
+            ''', (survey_id, question_id))
+            
+            existing = cur.fetchone()
+            
+            if existing:
+                # Обновляем существующую запись
+                cur.execute('''
+                    UPDATE t_p97156157_vitamin_assistant_pr.survey_answers 
+                    SET answer_value = %s, answer_json = %s, stage_number = %s
+                    WHERE survey_id = %s AND question_id = %s
+                ''', (answer_text_value, json.dumps(answer_json_value) if answer_json_value else None, stage, survey_id, question_id))
+            else:
+                # Вставляем новую запись
+                cur.execute('''
+                    INSERT INTO t_p97156157_vitamin_assistant_pr.survey_answers 
+                    (survey_id, question_id, answer_value, answer_json, stage_number)
+                    VALUES (%s, %s, %s, %s, %s)
+                ''', (survey_id, question_id, answer_text_value, json.dumps(answer_json_value) if answer_json_value else None, stage))
         
         # Обновляем статус этапа
         if stage == 2:
