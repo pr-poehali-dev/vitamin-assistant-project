@@ -27,6 +27,7 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
   const [surveyStatus, setSurveyStatus] = useState<SurveyStatus | null>(null);
   const [currentStage, setCurrentStage] = useState<'dashboard' | 'stage2' | 'stage3' | 'recommendations'>('dashboard');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadSurveyStatus();
@@ -63,8 +64,19 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
       console.log('Stage 2 response:', { status: response.status, data });
 
       if (response.ok) {
+        // Показываем индикатор обновления
+        setRefreshing(true);
+        
+        // Перезагружаем статус для обновления индикаторов
         await loadSurveyStatus();
+        
+        setRefreshing(false);
         setCurrentStage('dashboard');
+        
+        // Показываем уведомление об успехе
+        setTimeout(() => {
+          alert('✅ Анкета успешно сохранена! Ваши персональные рекомендации обновлены.');
+        }, 300);
       } else {
         console.error('Stage 2 save failed:', data);
         alert(`Ошибка при сохранении анкеты: ${data.error || 'Попробуйте снова'}`);
@@ -92,8 +104,19 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
       console.log('Stage 3 response:', { status: response.status, data });
 
       if (response.ok) {
+        // Показываем индикатор обновления
+        setRefreshing(true);
+        
+        // Перезагружаем статус для обновления индикаторов
         await loadSurveyStatus();
+        
+        setRefreshing(false);
         setCurrentStage('dashboard');
+        
+        // Показываем уведомление об успехе с указанием завершения всех этапов
+        setTimeout(() => {
+          alert('🎉 Поздравляем! Все анкеты заполнены. Теперь ваши персональные рекомендации максимально точные.');
+        }, 300);
       } else {
         console.error('Stage 3 save failed:', data);
         alert(`Ошибка при сохранении анкеты: ${data.error || 'Попробуйте снова'}`);
@@ -164,6 +187,14 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
               </p>
             </div>
           </div>
+          
+          {/* Индикатор обновления */}
+          {refreshing && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
+              <Icon name="RefreshCw" size={16} className="animate-spin" />
+              <span>Обновление данных...</span>
+            </div>
+          )}
         </div>
 
         {/* Прогресс заполнения */}
