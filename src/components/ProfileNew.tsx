@@ -30,6 +30,11 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    console.log('🏠 ProfileNew mounted with:', { userId, surveyId });
+    if (!userId || !surveyId) {
+      console.error('❌ ProfileNew: Missing userId or surveyId!');
+      return;
+    }
     loadSurveyStatus();
   }, [userId, surveyId]);
 

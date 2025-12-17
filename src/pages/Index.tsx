@@ -141,11 +141,23 @@ const Index = () => {
       
       {currentView === 'survey-new' && (
         <SurveyPage onComplete={(userId, surveyId) => {
-          console.log('Survey step 1 completed:', { userId, surveyId });
+          console.log('✅ Survey step 1 completed:', { userId, surveyId });
+          
+          if (!userId || !surveyId) {
+            console.error('❌ Invalid user or survey ID!');
+            alert('Ошибка: не удалось получить данные пользователя');
+            return;
+          }
+          
           const userData = { userId, surveyId };
-          setUserSurveyData(userData);
+          console.log('💾 Saving to localStorage:', userData);
+          
           // Сохраняем в localStorage для доступа после перезагрузки
           localStorage.setItem('userSurveyData', JSON.stringify(userData));
+          
+          console.log('🔄 Setting state and redirecting to profile...');
+          // Обновляем данные И сразу переходим в профиль
+          setUserSurveyData(userData);
           setCurrentView('profile');
         }} />
       )}
@@ -166,17 +178,32 @@ const Index = () => {
         <ProductDetail productId={selectedProductId} onBack={() => setCurrentView('catalog')} />
       )}
       
-      {currentView === 'profile' && userSurveyData && (
-        <ProfileNew 
-          userId={userSurveyData.userId} 
-          surveyId={userSurveyData.surveyId} 
-          onBack={handleBackToHome} 
-        />
-      )}
-      
-      {currentView === 'profile' && !userSurveyData && surveyData && (
-        <Profile data={surveyData} onBack={handleBackToHome} onCheckout={handleCheckout} />
-      )}
+      {currentView === 'profile' && (() => {
+        console.log('Profile view render check:', { userSurveyData, surveyData });
+        
+        if (userSurveyData) {
+          return (
+            <ProfileNew 
+              userId={userSurveyData.userId} 
+              surveyId={userSurveyData.surveyId} 
+              onBack={handleBackToHome} 
+            />
+          );
+        }
+        
+        if (surveyData) {
+          return <Profile data={surveyData} onBack={handleBackToHome} onCheckout={handleCheckout} />;
+        }
+        
+        return (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Загрузка профиля...</p>
+            </div>
+          </div>
+        );
+      })()}
       
       {currentView === 'checkout' && (
         <Checkout 
