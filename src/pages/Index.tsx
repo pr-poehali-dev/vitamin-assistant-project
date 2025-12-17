@@ -45,6 +45,17 @@ const Index = () => {
         console.error('Failed to parse saved survey data');
       }
     }
+
+    // Загружаем данные о новой анкете
+    const savedUserData = localStorage.getItem('userSurveyData');
+    if (savedUserData) {
+      try {
+        const userData = JSON.parse(savedUserData);
+        setUserSurveyData(userData);
+      } catch (e) {
+        console.error('Failed to parse user survey data');
+      }
+    }
     
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'admin') {
@@ -113,7 +124,7 @@ const Index = () => {
           <Hero 
             onStartSurvey={handleStartSurvey} 
             onViewCatalog={handleViewCatalog}
-            onViewProfile={surveyData ? handleViewProfile : undefined}
+            onViewProfile={userSurveyData || surveyData ? handleViewProfile : undefined}
             isAdmin={isAdmin}
           />
           <HowItWorks onStartSurvey={handleStartSurvey} />
@@ -131,7 +142,10 @@ const Index = () => {
       {currentView === 'survey-new' && (
         <SurveyPage onComplete={(userId, surveyId) => {
           console.log('Survey step 1 completed:', { userId, surveyId });
-          setUserSurveyData({ userId, surveyId });
+          const userData = { userId, surveyId };
+          setUserSurveyData(userData);
+          // Сохраняем в localStorage для доступа после перезагрузки
+          localStorage.setItem('userSurveyData', JSON.stringify(userData));
           setCurrentView('profile');
         }} />
       )}
