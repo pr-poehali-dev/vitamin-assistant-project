@@ -47,8 +47,20 @@ export default function SurveyPage({ onComplete }: SurveyPageProps) {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('📨 Backend response:', result);
+        
+        // Очищаем ID от возможных артефактов
+        const userId = typeof result.user_id === 'number' 
+          ? result.user_id 
+          : parseInt(String(result.user_id).split(':')[0], 10);
+        const surveyId = typeof result.survey_id === 'number' 
+          ? result.survey_id 
+          : parseInt(String(result.survey_id).split(':')[0], 10);
+        
+        console.log('🧹 Cleaned IDs:', { userId, surveyId });
+        
         // Сразу переходим в личный кабинет после предварительной анкеты
-        onComplete(result.user_id, result.survey_id);
+        onComplete(userId, surveyId);
       } else {
         alert('Ошибка при регистрации. Попробуйте снова.');
       }

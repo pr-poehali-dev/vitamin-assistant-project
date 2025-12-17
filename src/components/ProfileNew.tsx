@@ -24,36 +24,43 @@ interface SurveyStatus {
 }
 
 export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps) {
+  // Очищаем ID от возможных артефактов вроде "24:1"
+  const cleanUserId = typeof userId === 'number' ? userId : parseInt(String(userId).split(':')[0], 10);
+  const cleanSurveyId = typeof surveyId === 'number' ? surveyId : parseInt(String(surveyId).split(':')[0], 10);
+  
   const [surveyStatus, setSurveyStatus] = useState<SurveyStatus | null>(null);
   const [currentStage, setCurrentStage] = useState<'dashboard' | 'stage2' | 'stage3' | 'recommendations'>('dashboard');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    console.log('🏠 ProfileNew mounted with:', { userId, surveyId });
-    if (!userId || !surveyId) {
-      console.error('❌ ProfileNew: Missing userId or surveyId!');
+    console.log('🏠 ProfileNew mounted with:', { 
+      original: { userId, surveyId }, 
+      cleaned: { cleanUserId, cleanSurveyId } 
+    });
+    if (!cleanUserId || !cleanSurveyId || isNaN(cleanUserId) || isNaN(cleanSurveyId)) {
+      console.error('❌ ProfileNew: Invalid userId or surveyId!', { cleanUserId, cleanSurveyId });
       return;
     }
     loadSurveyStatus();
-  }, [userId, surveyId]);
+  }, [cleanUserId, cleanSurveyId]);
 
   // DEBUG: Выводим состояние для отладки
   useEffect(() => {
     if (surveyStatus) {
       console.log('📊 ProfileNew render state:', {
-        surveyId,
+        surveyId: cleanSurveyId,
         stage1: surveyStatus.stage1_completed,
         stage2: surveyStatus.stage2_completed,
         stage3: surveyStatus.stage3_completed,
         showRecommendations: surveyStatus.stage1_completed === true
       });
     }
-  }, [surveyStatus, surveyId]);
+  }, [surveyStatus, cleanSurveyId]);
 
   const loadSurveyStatus = async (isRefresh = false) => {
     try {
-      const response = await fetch(getSurveyUrl('status') + `?survey_id=${surveyId}`);
+      const response = await fetch(getSurveyUrl('status') + `?survey_id=${cleanSurveyId}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -73,13 +80,13 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
   };
 
   const handleStage2Complete = async (answers: Record<number, any>) => {
-    console.log('Saving Stage 2 answers:', { surveyId, answersCount: Object.keys(answers).length });
+    console.log('Saving Stage 2 answers:', { surveyId: cleanSurveyId, answersCount: Object.keys(answers).length });
     try {
       const response = await fetch(getSurveyUrl('submit-stage'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          survey_id: surveyId,
+          survey_id: cleanSurveyId,
           stage: 2,
           answers
         })
@@ -113,13 +120,13 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
   };
 
   const handleStage3Complete = async (answers: Record<number, any>) => {
-    console.log('Saving Stage 3 answers:', { surveyId, answersCount: Object.keys(answers).length });
+    console.log('Saving Stage 3 answers:', { surveyId: cleanSurveyId, answersCount: Object.keys(answers).length });
     try {
       const response = await fetch(getSurveyUrl('submit-stage'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          survey_id: surveyId,
+          survey_id: cleanSurveyId,
           stage: 3,
           answers
         })
@@ -185,8 +192,8 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
   if (currentStage === 'recommendations') {
     return (
       <PersonalRecommendations
-        userId={userId}
-        surveyId={surveyId}
+        userId={cleanUserId}
+        surveyId={cleanSurveyId}
         onBack={() => setCurrentStage('dashboard')}
       />
     );
