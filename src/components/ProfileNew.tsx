@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import SurveyStepTwo from '@/components/SurveyStepTwo';
 import SurveyStepThree from '@/components/SurveyStepThree';
+import PersonalRecommendations from '@/components/PersonalRecommendations';
 import { getSurveyUrl } from '@/config/api';
 
 interface ProfileNewProps {
@@ -24,7 +25,7 @@ interface SurveyStatus {
 
 export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps) {
   const [surveyStatus, setSurveyStatus] = useState<SurveyStatus | null>(null);
-  const [currentStage, setCurrentStage] = useState<'dashboard' | 'stage2' | 'stage3'>('dashboard');
+  const [currentStage, setCurrentStage] = useState<'dashboard' | 'stage2' | 'stage3' | 'recommendations'>('dashboard');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -118,6 +119,16 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
     return (
       <SurveyStepThree
         onComplete={handleStage3Complete}
+        onBack={() => setCurrentStage('dashboard')}
+      />
+    );
+  }
+
+  if (currentStage === 'recommendations') {
+    return (
+      <PersonalRecommendations
+        userId={userId}
+        surveyId={surveyId}
         onBack={() => setCurrentStage('dashboard')}
       />
     );
@@ -301,21 +312,41 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
 
         {/* Рекомендации (показывать только после всех этапов) */}
         {surveyStatus?.stage1_completed && surveyStatus?.stage2_completed && surveyStatus?.stage3_completed && (
-          <Card className="mt-8 animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="Sparkles" size={24} className="text-primary" />
+          <Card className="mt-8 animate-fade-in border-2 border-primary shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Icon name="Sparkles" size={28} className="text-primary" />
                 Ваши персональные рекомендации
               </CardTitle>
-              <CardDescription>
-                На основе всех заполненных анкет
+              <CardDescription className="text-base">
+                Комплексный анализ на основе всех заполненных анкет
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" size="lg">
-                <Icon name="Eye" size={20} className="mr-2" />
-                Посмотреть рекомендации
-              </Button>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-3 mb-4">
+                  <div className="p-3 rounded-lg bg-primary/5 text-center">
+                    <Icon name="Target" size={24} className="mx-auto mb-2 text-primary" />
+                    <p className="text-sm font-medium">Ваши цели</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-primary/5 text-center">
+                    <Icon name="Activity" size={24} className="mx-auto mb-2 text-primary" />
+                    <p className="text-sm font-medium">Образ жизни</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-primary/5 text-center">
+                    <Icon name="Apple" size={24} className="mx-auto mb-2 text-primary" />
+                    <p className="text-sm font-medium">Питание</p>
+                  </div>
+                </div>
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  onClick={() => setCurrentStage('recommendations')}
+                >
+                  <Icon name="Eye" size={20} className="mr-2" />
+                  Посмотреть детальные рекомендации
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

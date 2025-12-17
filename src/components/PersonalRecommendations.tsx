@@ -1,0 +1,434 @@
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import Icon from '@/components/ui/icon';
+import { getSurveyUrl } from '@/config/api';
+import { analyzeUserProfile, consolidateDeficiencies } from '@/services/vitaminAnalysis';
+import type { HealthAnalysis } from '@/services/vitaminAnalysis';
+
+interface PersonalRecommendationsProps {
+  userId: number;
+  surveyId: number;
+  onBack: () => void;
+}
+
+export default function PersonalRecommendations({ userId, surveyId, onBack }: PersonalRecommendationsProps) {
+  const [loading, setLoading] = useState(true);
+  const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    loadAnalysis();
+  }, [userId, surveyId]);
+
+  const loadAnalysis = async () => {
+    try {
+      // Загружаем данные пользователя
+      const userResponse = await fetch(getSurveyUrl('status') + `?survey_id=${surveyId}`);
+      if (!userResponse.ok) return;
+      
+      const userData = await userResponse.json();
+      setUserName(userData.user_name);
+
+      // Загружаем ответы из всех этапов
+      // TODO: Нужно создать endpoint для получения всех ответов
+      // Пока используем mock данные для демонстрации
+      
+      const mockProfile = {
+        name: userData.user_name,
+        birthDate: '1990-01-01',
+        goals: ['Поддержка иммунитета', 'Качество сна', 'Уровень энергии'],
+        stage2Answers: {
+          19: 'Часто',
+          20: 'Да, небольшие',
+          21: 'Часто (3-5 раз)',
+          24: 'Высокий',
+          23: 'Да, иногда',
+          27: 'Да, умеренное',
+          28: 'Средняя (2-3 раза в неделю)',
+          29: 'Менее 30 минут'
+        },
+        stage3Answers: {
+          1002: 'Редко/никогда',
+          1004: 'Раз в месяц',
+          1005: 'Редко',
+          1007: 'Несколько раз в неделю',
+          1008: 'Несколько раз в неделю',
+          1009: 'Редко',
+          1012: 'Нет, питаюсь обычно',
+          1014: '1-1.5 литра',
+          1019: 'Нет',
+          1020: 'Умеренно - есть любимые продукты, которые ем часто'
+        }
+      };
+
+      const result = analyzeUserProfile(mockProfile);
+      setAnalysis(result);
+    } catch (error) {
+      console.error('Error loading analysis:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Анализируем ваши данные...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analysis) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Icon name="AlertCircle" size={48} className="mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Не удалось загрузить анализ</p>
+            <Button onClick={onBack} className="mt-4">
+              Вернуться
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const consolidatedDeficiencies = consolidateDeficiencies(
+    analysis.vitaminDeficiencies,
+    analysis.nutrientDeficiencies
+  );
+
+  const criticalDeficiencies = consolidatedDeficiencies.filter(d => d.level === 'высокий');
+  const moderateDeficiencies = consolidatedDeficiencies.filter(d => d.level === 'средний');
+
+  return (
+    <div className="min-h-screen py-12 px-4 bg-gradient-to-br from-background to-muted">
+      <div className="container mx-auto max-w-5xl">
+        {/* Заголовок */}
+        <div className="flex items-center justify-between mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={onBack} className="rounded-full">
+              <Icon name="ArrowLeft" size={20} />
+            </Button>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold">Персональные рекомендации</h1>
+              <p className="text-muted-foreground mt-1">
+                Комплексный анализ для {userName}
+              </p>
+            </div>
+          </div>
+          <Badge variant="default" className="text-sm px-4 py-2">
+            <Icon name="Sparkles" size={16} className="mr-2" />
+            Готово
+          </Badge>
+        </div>
+
+        {/* Сводка */}
+        <div className="grid gap-4 md:grid-cols-3 mb-8 animate-fade-in">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                  <Icon name="AlertTriangle" size={20} className="text-red-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{criticalDeficiencies.length}</p>
+                  <p className="text-sm text-muted-foreground">Критических дефицитов</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                  <Icon name="AlertCircle" size={20} className="text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{moderateDeficiencies.length}</p>
+                  <p className="text-sm text-muted-foreground">Умеренных дефицитов</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Icon name="Target" size={20} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{analysis.priorities.length}</p>
+                  <p className="text-sm text-muted-foreground">Приоритетных целей</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Основные разделы */}
+        <Accordion type="multiple" defaultValue={['goals', 'deficiencies']} className="space-y-4">
+          {/* Приоритетные цели */}
+          <AccordionItem value="goals" className="border rounded-lg px-6 bg-card animate-scale-in">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Icon name="Target" size={24} className="text-primary" />
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold">Ваши приоритетные цели</h3>
+                  <p className="text-sm text-muted-foreground">Цели, выбранные вами</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pt-4 space-y-3">
+                {analysis.priorities.map((goal, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-primary/5">
+                    <Icon name="CheckCircle2" size={20} className="text-primary mt-0.5" />
+                    <span className="font-medium">{goal}</span>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Образ жизни */}
+          <AccordionItem value="lifestyle" className="border rounded-lg px-6 bg-card animate-scale-in" style={{ animationDelay: '0.1s' }}>
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Icon name="Activity" size={24} className="text-blue-500" />
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold">Образ жизни</h3>
+                  <p className="text-sm text-muted-foreground">Факторы, влияющие на здоровье</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pt-4 space-y-2">
+                {analysis.lifestyle.map((item, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <Icon name="Circle" size={8} className="text-blue-500 mt-2" />
+                    <span className="text-sm">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Особенности здоровья */}
+          {analysis.healthConcerns.length > 0 && (
+            <AccordionItem value="health" className="border rounded-lg px-6 bg-card animate-scale-in" style={{ animationDelay: '0.2s' }}>
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <Icon name="Heart" size={24} className="text-red-500" />
+                  <div className="text-left">
+                    <h3 className="text-xl font-semibold">Особенности здоровья</h3>
+                    <p className="text-sm text-muted-foreground">На что обратить внимание</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-4 space-y-2">
+                  {analysis.healthConcerns.map((item, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-red-500/5">
+                      <Icon name="AlertCircle" size={18} className="text-red-500 mt-0.5" />
+                      <span className="text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Пищевые привычки */}
+          {analysis.dietaryHabits.length > 0 && (
+            <AccordionItem value="diet" className="border rounded-lg px-6 bg-card animate-scale-in" style={{ animationDelay: '0.3s' }}>
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <Icon name="Apple" size={24} className="text-green-500" />
+                  <div className="text-left">
+                    <h3 className="text-xl font-semibold">Пищевые привычки</h3>
+                    <p className="text-sm text-muted-foreground">Особенности вашего рациона</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-4 space-y-2">
+                  {analysis.dietaryHabits.map((item, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                      <Icon name="Circle" size={8} className="text-green-500 mt-2" />
+                      <span className="text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Географические факторы */}
+          <AccordionItem value="geo" className="border rounded-lg px-6 bg-card animate-scale-in" style={{ animationDelay: '0.4s' }}>
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Icon name="MapPin" size={24} className="text-purple-500" />
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold">Географические факторы</h3>
+                  <p className="text-sm text-muted-foreground">Климат и окружающая среда</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pt-4 space-y-2">
+                {analysis.geographicFactors.map((item, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <Icon name="Circle" size={8} className="text-purple-500 mt-2" />
+                    <span className="text-sm">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Выявленные дефициты */}
+          <AccordionItem value="deficiencies" className="border rounded-lg px-6 bg-card animate-scale-in" style={{ animationDelay: '0.5s' }}>
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Icon name="Pill" size={24} className="text-orange-500" />
+                <div className="text-left">
+                  <h3 className="text-xl font-semibold">Выявленные дефициты</h3>
+                  <p className="text-sm text-muted-foreground">Витамины и микронутриенты</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="pt-4 space-y-4">
+                {/* Критические */}
+                {criticalDeficiencies.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <Badge variant="destructive">Критический уровень</Badge>
+                      <span className="text-sm text-muted-foreground">Требуется немедленное внимание</span>
+                    </h4>
+                    <div className="space-y-3">
+                      {criticalDeficiencies.map((def, index) => (
+                        <Card key={index} className="border-red-200 bg-red-50/50">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-semibold text-lg">{def.name}</h5>
+                              <Badge variant="destructive" className="text-xs">Высокий</Badge>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-muted-foreground">Причины дефицита:</p>
+                              <ul className="space-y-1">
+                                {def.reasons.map((reason, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <Icon name="AlertTriangle" size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
+                                    <span>{reason}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Умеренные */}
+                {moderateDeficiencies.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <Badge variant="outline" className="border-yellow-600 text-yellow-700">Умеренный уровень</Badge>
+                      <span className="text-sm text-muted-foreground">Рекомендуется восполнить</span>
+                    </h4>
+                    <div className="space-y-3">
+                      {moderateDeficiencies.map((def, index) => (
+                        <Card key={index} className="border-yellow-200 bg-yellow-50/30">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-semibold">{def.name}</h5>
+                              <Badge variant="outline" className="text-xs border-yellow-600 text-yellow-700">Средний</Badge>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-muted-foreground">Рекомендации:</p>
+                              <ul className="space-y-1">
+                                {def.reasons.map((reason, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <Icon name="Info" size={14} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+                                    <span>{reason}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        {/* Персональный курс */}
+        <Card className="mt-8 border-2 border-primary animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <Icon name="Sparkles" size={28} className="text-primary" />
+              Ваш персональный курс витаминов
+            </CardTitle>
+            <CardDescription className="text-base">
+              На основе выявленных дефицитов и ваших целей
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-6">
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Icon name="Package" size={20} className="text-primary" />
+                  Рекомендованный состав курса:
+                </h4>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {consolidatedDeficiencies.slice(0, 8).map((def, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 rounded bg-background">
+                      <Icon name="CheckCircle2" size={16} className="text-primary flex-shrink-0" />
+                      <span className="text-sm font-medium">{def.name}</span>
+                      <Badge variant={def.level === 'высокий' ? 'destructive' : 'secondary'} className="text-xs ml-auto">
+                        {def.level === 'высокий' ? 'Приоритет' : 'Доп.'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <Button size="lg" className="flex-1">
+                  <Icon name="ShoppingCart" size={20} className="mr-2" />
+                  Перейти к подбору продуктов
+                </Button>
+                <Button size="lg" variant="outline">
+                  <Icon name="Download" size={20} className="mr-2" />
+                  Скачать PDF
+                </Button>
+              </div>
+
+              <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg">
+                <Icon name="Info" size={16} className="inline mr-2" />
+                Рекомендуется консультация с врачом перед началом приёма витаминов
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
