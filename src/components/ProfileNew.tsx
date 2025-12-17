@@ -38,6 +38,19 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
     loadSurveyStatus();
   }, [userId, surveyId]);
 
+  // DEBUG: Выводим состояние для отладки
+  useEffect(() => {
+    if (surveyStatus) {
+      console.log('📊 ProfileNew render state:', {
+        surveyId,
+        stage1: surveyStatus.stage1_completed,
+        stage2: surveyStatus.stage2_completed,
+        stage3: surveyStatus.stage3_completed,
+        showRecommendations: surveyStatus.stage1_completed === true
+      });
+    }
+  }, [surveyStatus, surveyId]);
+
   const loadSurveyStatus = async (isRefresh = false) => {
     try {
       const response = await fetch(getSurveyUrl('status') + `?survey_id=${surveyId}`);
@@ -183,19 +196,6 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
     (surveyStatus?.stage1_completed ? 33 : 0) +
     (surveyStatus?.stage2_completed ? 33 : 0) +
     (surveyStatus?.stage3_completed ? 34 : 0);
-
-  // DEBUG: Выводим состояние для отладки
-  useEffect(() => {
-    if (surveyStatus) {
-      console.log('📊 ProfileNew render state:', {
-        surveyId,
-        stage1: surveyStatus.stage1_completed,
-        stage2: surveyStatus.stage2_completed,
-        stage3: surveyStatus.stage3_completed,
-        showRecommendations: surveyStatus.stage1_completed === true
-      });
-    }
-  }, [surveyStatus, surveyId]);
 
   return (
     <div className="min-h-screen py-12 px-4 bg-gradient-to-br from-background to-muted">
