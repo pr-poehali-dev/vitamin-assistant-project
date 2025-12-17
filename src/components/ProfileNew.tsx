@@ -33,17 +33,24 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
     loadSurveyStatus();
   }, [userId, surveyId]);
 
-  const loadSurveyStatus = async () => {
+  const loadSurveyStatus = async (isRefresh = false) => {
     try {
       const response = await fetch(getSurveyUrl('status') + `?survey_id=${surveyId}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Survey status loaded:', data);
         setSurveyStatus(data);
+      } else {
+        console.error('Failed to load survey status:', response.status);
       }
     } catch (error) {
       console.error('Error loading survey status:', error);
     } finally {
-      setLoading(false);
+      // Снимаем loading только при первой загрузке
+      if (!isRefresh) {
+        setLoading(false);
+      }
     }
   };
 
@@ -68,7 +75,7 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
         setRefreshing(true);
         
         // Перезагружаем статус для обновления индикаторов
-        await loadSurveyStatus();
+        await loadSurveyStatus(true);
         
         setRefreshing(false);
         setCurrentStage('dashboard');
@@ -108,7 +115,7 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
         setRefreshing(true);
         
         // Перезагружаем статус для обновления индикаторов
-        await loadSurveyStatus();
+        await loadSurveyStatus(true);
         
         setRefreshing(false);
         setCurrentStage('dashboard');
@@ -171,6 +178,19 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
     (surveyStatus?.stage1_completed ? 33 : 0) +
     (surveyStatus?.stage2_completed ? 33 : 0) +
     (surveyStatus?.stage3_completed ? 34 : 0);
+
+  // DEBUG: Выводим состояние для отладки
+  useEffect(() => {
+    if (surveyStatus) {
+      console.log('📊 ProfileNew render state:', {
+        surveyId,
+        stage1: surveyStatus.stage1_completed,
+        stage2: surveyStatus.stage2_completed,
+        stage3: surveyStatus.stage3_completed,
+        showRecommendations: surveyStatus.stage1_completed === true
+      });
+    }
+  }, [surveyStatus, surveyId]);
 
   return (
     <div className="min-h-screen py-12 px-4 bg-gradient-to-br from-background to-muted">
