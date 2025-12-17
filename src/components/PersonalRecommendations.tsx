@@ -34,13 +34,14 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
 
       // Загружаем ответы из всех этапов
       // TODO: Нужно создать endpoint для получения всех ответов
-      // Пока используем mock данные для демонстрации
+      // Пока используем mock данные с проверкой заполненности этапов
       
       const mockProfile = {
         name: userData.user_name,
         birthDate: '1990-01-01',
         goals: ['Поддержка иммунитета', 'Качество сна', 'Уровень энергии'],
-        stage2Answers: {
+        // Добавляем ответы только если этапы заполнены
+        stage2Answers: userData.stage2_completed ? {
           19: 'Часто',
           20: 'Да, небольшие',
           21: 'Часто (3-5 раз)',
@@ -49,8 +50,8 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
           27: 'Да, умеренное',
           28: 'Средняя (2-3 раза в неделю)',
           29: 'Менее 30 минут'
-        },
-        stage3Answers: {
+        } : undefined,
+        stage3Answers: userData.stage3_completed ? {
           1002: 'Редко/никогда',
           1004: 'Раз в месяц',
           1005: 'Редко',
@@ -61,7 +62,7 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
           1014: '1-1.5 литра',
           1019: 'Нет',
           1020: 'Умеренно - есть любимые продукты, которые ем часто'
-        }
+        } : undefined
       };
 
       const result = analyzeUserProfile(mockProfile);
@@ -108,6 +109,11 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
   const criticalDeficiencies = consolidatedDeficiencies.filter(d => d.level === 'высокий');
   const moderateDeficiencies = consolidatedDeficiencies.filter(d => d.level === 'средний');
 
+  // Проверяем заполненность этапов через наличие данных
+  const hasStage2Data = analysis.healthConcerns.length > 0 || analysis.lifestyle.length > 2;
+  const hasStage3Data = analysis.dietaryHabits.length > 0 || analysis.nutrientDeficiencies.length > 0;
+  const allStagesCompleted = hasStage2Data && hasStage3Data;
+
   return (
     <div className="min-h-screen py-12 px-4 bg-gradient-to-br from-background to-muted">
       <div className="container mx-auto max-w-5xl">
@@ -120,15 +126,76 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">Персональные рекомендации</h1>
               <p className="text-muted-foreground mt-1">
-                Комплексный анализ для {userName}
+                {allStagesCompleted ? 'Комплексный анализ' : 'Предварительный анализ'} для {userName}
               </p>
             </div>
           </div>
-          <Badge variant="default" className="text-sm px-4 py-2">
-            <Icon name="Sparkles" size={16} className="mr-2" />
-            Готово
+          <Badge variant={allStagesCompleted ? 'default' : 'secondary'} className="text-sm px-4 py-2">
+            <Icon name={allStagesCompleted ? 'CheckCircle2' : 'Clock'} size={16} className="mr-2" />
+            {allStagesCompleted ? 'Полный анализ' : 'Предварительно'}
           </Badge>
         </div>
+
+        {/* Уведомление о неполных данных */}
+        {!allStagesCompleted && (
+          <Card className="mb-8 border-2 border-yellow-500/50 bg-yellow-50/50 animate-fade-in">
+            <CardContent className="pt-6">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <Icon name="TrendingUp" size={24} className="text-yellow-700" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-2 text-yellow-900">
+                    Повысьте точность рекомендаций
+                  </h3>
+                  <p className="text-sm text-yellow-800 mb-3">
+                    Сейчас рекомендации основаны только на базовых данных. 
+                    Заполните {!hasStage2Data && 'расширенную анкету (Этап 2)'}
+                    {!hasStage2Data && !hasStage3Data && ' и '}
+                    {!hasStage3Data && 'анкету о питании (Этап 3)'}, 
+                    чтобы получить максимально персонализированный курс витаминов с учётом:
+                  </p>
+                  <ul className="space-y-1 text-sm text-yellow-800">
+                    {!hasStage2Data && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <Icon name="Circle" size={8} className="text-yellow-600 mt-1.5 flex-shrink-0" />
+                          <span>Ваших симптомов и жалоб на здоровье</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Icon name="Circle" size={8} className="text-yellow-600 mt-1.5 flex-shrink-0" />
+                          <span>Образа жизни и уровня стресса</span>
+                        </li>
+                      </>
+                    )}
+                    {!hasStage3Data && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <Icon name="Circle" size={8} className="text-yellow-600 mt-1.5 flex-shrink-0" />
+                          <span>Особенностей вашего рациона питания</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Icon name="Circle" size={8} className="text-yellow-600 mt-1.5 flex-shrink-0" />
+                          <span>Дефицита микронутриентов из-за недостатка определённых продуктов</span>
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                  <Button 
+                    onClick={onBack} 
+                    className="mt-4 bg-yellow-600 hover:bg-yellow-700"
+                    size="sm"
+                  >
+                    <Icon name="ArrowLeft" size={16} className="mr-2" />
+                    Вернуться к анкетам
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Сводка */}
         <div className="grid gap-4 md:grid-cols-3 mb-8 animate-fade-in">
