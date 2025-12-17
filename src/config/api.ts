@@ -5,9 +5,11 @@ export const API_URLS = {
   products: funcUrls.products,
   orders: funcUrls.orders,
   syncCatalog: funcUrls['sync-catalog'],
-  pageBuilder: funcUrls['page-builder']
+  pageBuilder: funcUrls['page-builder'],
+  surveySubmitStage: funcUrls['survey-submit-stage']
 };
 
-export const getSurveyUrl = (action: 'questions' | 'register' | 'submit' | 'user') => {
+export const getSurveyUrl = (action: 'questions' | 'register' | 'submit' | 'user' | 'status' | 'submit-stage') => {
+  if (action === 'submit-stage') return API_URLS.surveySubmitStage || '';
   return `${API_URLS.survey}?action=${action}`;
 };

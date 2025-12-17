@@ -10,6 +10,7 @@ import SurveyPage from '@/pages/SurveyPage';
 import Results from '@/components/Results';
 import Catalog from '@/components/Catalog';
 import Profile from '@/components/Profile';
+import ProfileNew from '@/components/ProfileNew';
 import Checkout from '@/components/Checkout';
 import Admin from '@/components/Admin';
 import ProductDetail from '@/components/ProductDetail';
@@ -28,6 +29,7 @@ export type SurveyData = {
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<'home' | 'survey' | 'survey-new' | 'results' | 'catalog' | 'profile' | 'checkout' | 'admin' | 'productDetail'>('home');
+  const [userSurveyData, setUserSurveyData] = useState<{userId: number; surveyId: number} | null>(null);
   const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
   const [checkoutItems, setCheckoutItems] = useState<Array<{id: number; name: string; price: number; quantity: number; emoji: string}>>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -128,8 +130,9 @@ const Index = () => {
       
       {currentView === 'survey-new' && (
         <SurveyPage onComplete={(userId, surveyId) => {
-          console.log('Survey completed:', { userId, surveyId });
-          setCurrentView('results');
+          console.log('Survey step 1 completed:', { userId, surveyId });
+          setUserSurveyData({ userId, surveyId });
+          setCurrentView('profile');
         }} />
       )}
       
@@ -149,7 +152,15 @@ const Index = () => {
         <ProductDetail productId={selectedProductId} onBack={() => setCurrentView('catalog')} />
       )}
       
-      {currentView === 'profile' && surveyData && (
+      {currentView === 'profile' && userSurveyData && (
+        <ProfileNew 
+          userId={userSurveyData.userId} 
+          surveyId={userSurveyData.surveyId} 
+          onBack={handleBackToHome} 
+        />
+      )}
+      
+      {currentView === 'profile' && !userSurveyData && surveyData && (
         <Profile data={surveyData} onBack={handleBackToHome} onCheckout={handleCheckout} />
       )}
       

@@ -57,10 +57,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif action == 'user' and method == 'GET':
             return get_user_survey(event, headers)
         
+        elif action == 'status' and method == 'GET':
+            return get_survey_status(event, headers)
+        
         return {
             'statusCode': 404,
             'headers': headers,
-            'body': json.dumps({'error': 'Not found. Use ?action=questions|register|submit|user'}),
+            'body': json.dumps({'error': 'Not found. Use ?action=questions|register|submit|user|status'}),
             'isBase64Encoded': False
         }
     
@@ -248,8 +251,8 @@ def register_user(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, A
         user_id = cur.fetchone()[0]
     
     cur.execute("""
-        INSERT INTO user_surveys (user_id, goals, stage, completed)
-        VALUES (%s, %s, 1, FALSE)
+        INSERT INTO user_surveys (user_id, goals, stage, completed, stage1_completed)
+        VALUES (%s, %s, 1, FALSE, TRUE)
         RETURNING id
     """, (user_id, goals))
     
@@ -359,6 +362,61 @@ def get_user_survey(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str,
             'stage': row[7],
             'completed': row[8]
         } if row[5] else None
+    }
+    
+    cur.close()
+    conn.close()
+    
+    return {
+        'statusCode': 200,
+        'headers': headers,
+        'body': json.dumps(result),
+        'isBase64Encoded': False
+    }
+
+def get_survey_status(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
+    params = event.get('queryStringParameters') or {}
+    survey_id = params.get('survey_id')
+    
+    if not survey_id:
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': 'survey_id is required'}),
+            'isBase64Encoded': False
+        }
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT 
+            u.id, u.name, u.email,
+            s.stage1_completed, s.stage2_completed, s.stage3_completed
+        FROM users u
+        JOIN user_surveys s ON s.user_id = u.id
+        WHERE s.id = %s
+    """, (survey_id,))
+    
+    row = cur.fetchone()
+    
+    if not row:
+        cur.close()
+        conn.close()
+        return {
+            'statusCode': 404,
+            'headers': headers,
+            'body': json.dumps({'error': 'Survey not found'}),
+            'isBase64Encoded': False
+        }
+    
+    result = {
+        'user_id': row[0],
+        'user_name': row[1],
+        'user_email': row[2],
+        'stage1_completed': row[3] or False,
+        'stage2_completed': row[4] or False,
+        'stage3_completed': row[5] or False
     }
     
     cur.close()
