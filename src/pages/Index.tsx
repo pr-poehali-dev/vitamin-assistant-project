@@ -51,9 +51,30 @@ const Index = () => {
     if (savedUserData) {
       try {
         const userData = JSON.parse(savedUserData);
-        setUserSurveyData(userData);
+        // Преобразуем в числа явно при загрузке из localStorage
+        const cleanedUserData = {
+          userId: typeof userData.userId === 'number' ? userData.userId : parseInt(String(userData.userId).split(':')[0], 10),
+          surveyId: typeof userData.surveyId === 'number' ? userData.surveyId : parseInt(String(userData.surveyId).split(':')[0], 10)
+        };
+        
+        // Проверяем, что после парсинга получились корректные числа
+        if (!isNaN(cleanedUserData.userId) && !isNaN(cleanedUserData.surveyId) && 
+            cleanedUserData.userId > 0 && cleanedUserData.surveyId > 0) {
+          console.log('📦 Loaded from localStorage:', { original: userData, cleaned: cleanedUserData });
+          setUserSurveyData(cleanedUserData);
+          
+          // Пересохраняем в localStorage с очищенными данными
+          if (JSON.stringify(userData) !== JSON.stringify(cleanedUserData)) {
+            localStorage.setItem('userSurveyData', JSON.stringify(cleanedUserData));
+            console.log('🧹 Cleaned localStorage data');
+          }
+        } else {
+          console.error('❌ Invalid data in localStorage, clearing...', cleanedUserData);
+          localStorage.removeItem('userSurveyData');
+        }
       } catch (e) {
-        console.error('Failed to parse user survey data');
+        console.error('Failed to parse user survey data:', e);
+        localStorage.removeItem('userSurveyData');
       }
     }
     
@@ -141,15 +162,21 @@ const Index = () => {
       
       {currentView === 'survey-new' && (
         <SurveyPage onComplete={(userId, surveyId) => {
-          console.log('✅ Survey step 1 completed:', { userId, surveyId });
+          console.log('✅ Survey step 1 completed (raw):', { userId, surveyId, userIdType: typeof userId, surveyIdType: typeof surveyId });
           
-          if (!userId || !surveyId) {
-            console.error('❌ Invalid user or survey ID!');
+          // Преобразуем в числа явно, чтобы избежать "22:1" и подобных артефактов
+          const userIdNum = typeof userId === 'number' ? userId : parseInt(String(userId).split(':')[0], 10);
+          const surveyIdNum = typeof surveyId === 'number' ? surveyId : parseInt(String(surveyId).split(':')[0], 10);
+          
+          console.log('✅ Survey step 1 completed (parsed):', { userId: userIdNum, surveyId: surveyIdNum });
+          
+          if (!userIdNum || !surveyIdNum || isNaN(userIdNum) || isNaN(surveyIdNum)) {
+            console.error('❌ Invalid user or survey ID!', { userIdNum, surveyIdNum });
             alert('Ошибка: не удалось получить данные пользователя');
             return;
           }
           
-          const userData = { userId, surveyId };
+          const userData = { userId: userIdNum, surveyId: surveyIdNum };
           console.log('💾 Saving to localStorage:', userData);
           
           // Сохраняем в localStorage для доступа после перезагрузки
