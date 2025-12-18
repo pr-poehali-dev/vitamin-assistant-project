@@ -167,10 +167,10 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
                     Повысьте точность рекомендаций
                   </h3>
                   <p className="text-sm text-yellow-800 mb-3">
-                    Сейчас рекомендации основаны только на базовых данных. 
-                    Заполните {!hasStage2Data && 'расширенную анкету (Этап 2)'}
-                    {!hasStage2Data && !hasStage3Data && ' и '}
-                    {!hasStage3Data && 'анкету о питании (Этап 3)'}, 
+                    Сейчас рекомендации основаны только на базовых данных (Этап 1). 
+                    Пройдите дополнительные этапы опроса — {!hasStage2Data ? 'Этап 2 (образ жизни и здоровье)' : '✓ Этап 2'}
+                    {' и '}
+                    {!hasStage3Data ? 'Этап 3 (питание и привычки)' : '✓ Этап 3'} — 
                     чтобы получить максимально персонализированный курс витаминов с учётом:
                   </p>
                   <ul className="space-y-1 text-sm text-yellow-800">
