@@ -15,21 +15,37 @@ interface PersonalRecommendationsProps {
 }
 
 export default function PersonalRecommendations({ userId, surveyId, onBack }: PersonalRecommendationsProps) {
+  const cleanUserId = typeof userId === 'number' ? userId : parseInt(String(userId).split(':')[0], 10);
+  const cleanSurveyId = typeof surveyId === 'number' ? surveyId : parseInt(String(surveyId).split(':')[0], 10);
+  
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
+    console.log('🔬 PersonalRecommendations mounted:', { 
+      original: { userId, surveyId }, 
+      cleaned: { cleanUserId, cleanSurveyId } 
+    });
     loadAnalysis();
-  }, [userId, surveyId]);
+  }, [cleanUserId, cleanSurveyId]);
 
   const loadAnalysis = async () => {
     try {
-      // Загружаем данные пользователя
-      const userResponse = await fetch(getSurveyUrl('status') + `?survey_id=${surveyId}`);
-      if (!userResponse.ok) return;
+      const url = getSurveyUrl('status') + `&survey_id=${cleanSurveyId}`;
+      console.log('📊 Loading user analysis from:', url);
+      
+      const userResponse = await fetch(url);
+      console.log('📡 Analysis response:', { status: userResponse.status, ok: userResponse.ok });
+      
+      if (!userResponse.ok) {
+        console.error('❌ Failed to load analysis');
+        setLoading(false);
+        return;
+      }
       
       const userData = await userResponse.json();
+      console.log('✅ User data loaded:', userData);
       setUserName(userData.user_name);
 
       // Загружаем ответы из всех этапов
