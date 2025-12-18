@@ -60,7 +60,7 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
 
   const loadSurveyStatus = async (isRefresh = false) => {
     try {
-      const url = getSurveyUrl('status') + `?survey_id=${cleanSurveyId}`;
+      const url = getSurveyUrl('status') + `&survey_id=${cleanSurveyId}`;
       console.log('🔄 Loading survey status from:', url);
       
       const response = await fetch(url);

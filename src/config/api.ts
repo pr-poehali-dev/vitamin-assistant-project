@@ -10,6 +10,5 @@ export const API_URLS = {
 };
 
 export const getSurveyUrl = (action: 'questions' | 'register' | 'submit' | 'user' | 'status' | 'submit-stage') => {
-  if (action === 'submit-stage') return API_URLS.surveySubmitStage || '';
   return `${API_URLS.survey}?action=${action}`;
 };
