@@ -1,16 +1,81 @@
 import json
 import os
 import psycopg2
+import uuid
+import base64
+import requests
 from datetime import datetime
 from typing import Dict, Any
 
+def create_yookassa_payment(order_id: int, order_number: str, amount: float, customer_email: str, return_url: str) -> Dict[str, Any]:
+    '''Создание платежа через ЮKassa'''
+    shop_id = os.environ.get('YOOMONEY_SHOP_ID')
+    secret_key = os.environ.get('YOOMONEY_SECRET_KEY')
+    
+    idempotence_key = str(uuid.uuid4())
+    
+    payment_data = {
+        'amount': {
+            'value': f'{amount:.2f}',
+            'currency': 'RUB'
+        },
+        'confirmation': {
+            'type': 'redirect',
+            'return_url': return_url
+        },
+        'capture': True,
+        'description': f'Заказ {order_number}',
+        'metadata': {
+            'order_id': order_id,
+            'order_number': order_number
+        }
+    }
+    
+    if customer_email:
+        payment_data['receipt'] = {
+            'customer': {
+                'email': customer_email
+            },
+            'items': [{
+                'description': 'Витаминный курс',
+                'quantity': '1',
+                'amount': {
+                    'value': f'{amount:.2f}',
+                    'currency': 'RUB'
+                },
+                'vat_code': 1
+            }]
+        }
+    
+    auth_string = f'{shop_id}:{secret_key}'
+    auth_header = base64.b64encode(auth_string.encode()).decode()
+    
+    headers = {
+        'Authorization': f'Basic {auth_header}',
+        'Idempotence-Key': idempotence_key,
+        'Content-Type': 'application/json'
+    }
+    
+    response = requests.post(
+        'https://api.yookassa.ru/v3/payments',
+        json=payment_data,
+        headers=headers,
+        timeout=10
+    )
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f'ЮKassa error: {response.text}')
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: API для создания заказов и работы с платежами
+    Business: API для создания заказов и работы с платежами через ЮKassa
     Args: event с httpMethod, body, queryStringParameters
-    Returns: HTTP response с данными заказа или списком заказов
+    Returns: HTTP response с данными заказа, ссылкой на оплату или списком заказов
     '''
     method: str = event.get('httpMethod', 'GET')
+    path: str = event.get('requestContext', {}).get('http', {}).get('path', event.get('path', '/'))
     
     if method == 'OPTIONS':
         return {
@@ -33,6 +98,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
             
+            # Webhook от ЮKassa
+            if 'event' in body_data and body_data.get('event') == 'payment.succeeded':
+                payment_id = body_data['object']['id']
+                order_number = body_data['object']['metadata'].get('order_number')
+                
+                cur.execute('''
+                    UPDATE orders 
+                    SET payment_status = 'paid', 
+                        payment_id = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE order_number = %s
+                ''', (payment_id, order_number))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            # Создание заказа с оплатой
             order_number = f"VIT-{datetime.now().strftime('%Y%m%d')}-{datetime.now().timestamp():.0f}"
             
             cur.execute('''
@@ -62,20 +149,62 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             order_id, order_num, created = result
             conn.commit()
             
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({
-                    'success': True,
-                    'orderId': order_id,
-                    'orderNumber': order_num,
-                    'createdAt': created.isoformat()
-                })
-            }
+            # Создаём платёж в ЮKassa
+            host = event.get('headers', {}).get('host', 'localhost')
+            return_url = f"https://{host}/order-success?order={order_num}"
+            
+            try:
+                payment_response = create_yookassa_payment(
+                    order_id=order_id,
+                    order_number=order_num,
+                    amount=body_data.get('totalAmount'),
+                    customer_email=body_data.get('customerEmail'),
+                    return_url=return_url
+                )
+                
+                payment_id = payment_response['id']
+                confirmation_url = payment_response['confirmation']['confirmation_url']
+                
+                # Сохраняем payment_id
+                cur.execute('''
+                    UPDATE orders 
+                    SET payment_id = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ''', (payment_id, order_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({
+                        'success': True,
+                        'orderId': order_id,
+                        'orderNumber': order_num,
+                        'createdAt': created.isoformat(),
+                        'paymentUrl': confirmation_url
+                    })
+                }
+            except Exception as e:
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({
+                        'success': True,
+                        'orderId': order_id,
+                        'orderNumber': order_num,
+                        'createdAt': created.isoformat(),
+                        'paymentError': str(e)
+                    })
+                }
         
         elif method == 'GET':
             params = event.get('queryStringParameters') or {}

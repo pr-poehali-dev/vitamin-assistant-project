@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Icon from '@/components/ui/icon';
+import CheckoutDialog from '@/components/CheckoutDialog';
 import { getSurveyUrl } from '@/config/api';
 import { analyzeUserProfile, consolidateDeficiencies } from '@/services/vitaminAnalysis';
 import type { HealthAnalysis } from '@/services/vitaminAnalysis';
@@ -22,6 +23,7 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
   const [userName, setUserName] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<1 | 2 | 3>(3);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     console.log('🔬 PersonalRecommendations mounted:', { 
@@ -576,7 +578,11 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
                       </p>
                     </div>
 
-                    <Button size="lg" className="w-full text-lg">
+                    <Button 
+                      size="lg" 
+                      className="w-full text-lg"
+                      onClick={() => setCheckoutOpen(true)}
+                    >
                       <Icon name="ShoppingCart" size={20} className="mr-2" />
                       Оформить заказ
                     </Button>
@@ -596,6 +602,15 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
           </CardContent>
         </Card>
       </div>
+
+      <CheckoutDialog
+        isOpen={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        amount={selectedDuration === 1 ? 2990 : selectedDuration === 2 ? 5490 : 7490}
+        duration={selectedDuration}
+        userId={cleanUserId}
+        surveyId={cleanSurveyId}
+      />
     </div>
   );
 }

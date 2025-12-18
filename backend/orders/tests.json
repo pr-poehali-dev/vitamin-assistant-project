@@ -21,7 +21,8 @@
       "expectedBody": {
         "success": true,
         "orderId": "number",
-        "orderNumber": "string"
+        "orderNumber": "string",
+        "paymentUrl": "string"
       },
       "bodyMatcher": "partial"
     },
