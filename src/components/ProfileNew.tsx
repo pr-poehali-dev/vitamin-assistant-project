@@ -60,19 +60,23 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
 
   const loadSurveyStatus = async (isRefresh = false) => {
     try {
-      const response = await fetch(getSurveyUrl('status') + `?survey_id=${cleanSurveyId}`);
+      const url = getSurveyUrl('status') + `?survey_id=${cleanSurveyId}`;
+      console.log('🔄 Loading survey status from:', url);
+      
+      const response = await fetch(url);
+      console.log('📡 Survey status response:', { status: response.status, ok: response.ok });
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Survey status loaded:', data);
+        console.log('✅ Survey status loaded:', data);
         setSurveyStatus(data);
       } else {
-        console.error('Failed to load survey status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Failed to load survey status:', { status: response.status, error: errorText });
       }
     } catch (error) {
-      console.error('Error loading survey status:', error);
+      console.error('💥 Error loading survey status:', error);
     } finally {
-      // Снимаем loading только при первой загрузке
       if (!isRefresh) {
         setLoading(false);
       }
@@ -96,21 +100,20 @@ export default function ProfileNew({ userId, surveyId, onBack }: ProfileNewProps
       console.log('Stage 2 response:', { status: response.status, data });
 
       if (response.ok) {
-        // Показываем индикатор обновления
+        console.log('🎯 Stage 2 saved successfully, refreshing status...');
         setRefreshing(true);
         
-        // Перезагружаем статус для обновления индикаторов
         await loadSurveyStatus(true);
         
         setRefreshing(false);
         setCurrentStage('dashboard');
+        console.log('✅ Stage 2 complete, returning to dashboard');
         
-        // Показываем уведомление об успехе
         setTimeout(() => {
           alert('✅ Анкета успешно сохранена! Ваши персональные рекомендации обновлены.');
         }, 300);
       } else {
-        console.error('Stage 2 save failed:', data);
+        console.error('❌ Stage 2 save failed:', data);
         alert(`Ошибка при сохранении анкеты: ${data.error || 'Попробуйте снова'}`);
       }
     } catch (error) {
