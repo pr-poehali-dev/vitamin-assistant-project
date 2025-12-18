@@ -12,3 +12,7 @@ export const API_URLS = {
 export const getSurveyUrl = (action: 'questions' | 'register' | 'submit' | 'user' | 'status' | 'submit-stage') => {
   return `${API_URLS.survey}?action=${action}`;
 };
+
+export const getOrdersUrl = () => {
+  return API_URLS.orders;
+};
