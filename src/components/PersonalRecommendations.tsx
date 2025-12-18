@@ -21,6 +21,7 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
   const [userName, setUserName] = useState('');
+  const [selectedDuration, setSelectedDuration] = useState<1 | 2 | 3>(3);
 
   useEffect(() => {
     console.log('🔬 PersonalRecommendations mounted:', { 
@@ -473,38 +474,55 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
             <div className="space-y-6">
               {/* Табы выбора длительности */}
               <div className="flex flex-wrap gap-3 justify-center mb-6">
-                <Button variant="outline" className="flex-1 min-w-[120px] border-2">
-                  <Icon name="Zap" size={18} className="mr-2 text-primary" />
+                <Button 
+                  variant={selectedDuration === 1 ? "default" : "outline"} 
+                  className="flex-1 min-w-[120px] border-2"
+                  onClick={() => setSelectedDuration(1)}
+                >
+                  <Icon name="Zap" size={18} className="mr-2" />
                   1 месяц
                 </Button>
-                <Button variant="outline" className="flex-1 min-w-[120px] border-2">
+                <Button 
+                  variant={selectedDuration === 2 ? "default" : "outline"} 
+                  className="flex-1 min-w-[120px] border-2"
+                  onClick={() => setSelectedDuration(2)}
+                >
                   <Icon name="Package" size={18} className="mr-2" />
                   2 месяца
                 </Button>
-                <Button variant="default" className="flex-1 min-w-[120px] border-2 relative">
+                <Button 
+                  variant={selectedDuration === 3 ? "default" : "outline"} 
+                  className="flex-1 min-w-[120px] border-2 relative"
+                  onClick={() => setSelectedDuration(3)}
+                >
                   <Icon name="Sparkles" size={18} className="mr-2" />
                   3 месяца
-                  <Badge className="absolute -top-2 -right-2 bg-green-500 text-white text-xs">
-                    Подходит вам
-                  </Badge>
+                  {selectedDuration === 3 && (
+                    <Badge className="absolute -top-2 -right-2 bg-green-500 text-white text-xs">
+                      Подходит вам
+                    </Badge>
+                  )}
                 </Button>
               </div>
 
-              {/* Карточка курса на 3 месяца */}
+              {/* Карточка выбранного курса */}
               <div className="border-2 border-primary rounded-xl p-6 bg-gradient-to-br from-primary/5 to-background">
                 <div className="flex flex-col md:flex-row gap-6">
-                  {/* Левая часть - информация о курсе */}
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-green-500 text-white">
                           <Icon name="Clock" size={14} className="mr-1" />
-                          30 дней
+                          {selectedDuration * 30} дней
                         </Badge>
                       </div>
-                      <h3 className="text-2xl font-bold mb-1">Курс на 3 месяца</h3>
+                      <h3 className="text-2xl font-bold mb-1">
+                        Курс на {selectedDuration} {selectedDuration === 1 ? 'месяц' : selectedDuration < 5 ? 'месяца' : 'месяцев'}
+                      </h3>
                       <p className="text-muted-foreground text-sm">
-                        Оптимальная длительность для достижения стабильных результатов
+                        {selectedDuration === 1 && 'Для быстрых первых изменений'}
+                        {selectedDuration === 2 && 'Для заметных результатов'}
+                        {selectedDuration === 3 && 'Оптимальная длительность для достижения стабильных результатов'}
                       </p>
                     </div>
 
@@ -516,27 +534,45 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
                       <div className="space-y-2">
                         <div className="flex items-start gap-2">
                           <Icon name="Droplet" size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">Восполните основные дефициты</span>
+                          <span className="text-sm">
+                            {selectedDuration === 1 && 'Начнёте восполнять дефициты'}
+                            {selectedDuration === 2 && 'Значительно восполните дефициты'}
+                            {selectedDuration === 3 && 'Восполните основные дефициты'}
+                          </span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Icon name="Smile" size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">Заметите улучшение самочувствия</span>
+                          <span className="text-sm">
+                            {selectedDuration === 1 && 'Почувствуете первые улучшения'}
+                            {selectedDuration === 2 && 'Заметите улучшение самочувствия'}
+                            {selectedDuration === 3 && 'Стабильно улучшите самочувствие'}
+                          </span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Icon name="Sparkles" size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">Сформируете здоровую привычку</span>
+                          <span className="text-sm">
+                            {selectedDuration === 1 && 'Попробуете витаминную поддержку'}
+                            {selectedDuration === 2 && 'Начнёте формировать привычку'}
+                            {selectedDuration === 3 && 'Сформируете здоровую привычку'}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     <div className="pt-4 border-t">
                       <div className="flex items-baseline gap-2 mb-1">
-                        <span className="text-3xl font-bold">7 490 ₽</span>
-                        <span className="text-sm text-muted-foreground line-through">9 990 ₽</span>
+                        <span className="text-3xl font-bold">
+                          {selectedDuration === 1 && '2 990 ₽'}
+                          {selectedDuration === 2 && '5 490 ₽'}
+                          {selectedDuration === 3 && '7 490 ₽'}
+                        </span>
+                        {selectedDuration === 3 && (
+                          <span className="text-sm text-muted-foreground line-through">9 990 ₽</span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         <Icon name="CreditCard" size={12} className="inline mr-1" />
-                        частями от 2 497 ₽
+                        частями от {selectedDuration === 1 ? '997' : selectedDuration === 2 ? '1 830' : '2 497'} ₽
                       </p>
                     </div>
 
@@ -546,55 +582,9 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
                     </Button>
                   </div>
 
-                  {/* Правая часть - изображение (будет видна на десктопе) */}
                   <div className="hidden md:block md:w-[200px] relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg"></div>
                   </div>
-                </div>
-              </div>
-
-              {/* Карточки для других курсов (компактные) */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Курс на 1 месяц */}
-                <div className="border rounded-lg p-4 bg-card hover:border-primary/50 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">Курс на 1 месяц</h4>
-                    <Badge variant="outline" className="text-xs">
-                      <Icon name="Clock" size={12} className="mr-1" />
-                      30 дней
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Для первых, быстрых изменений
-                  </p>
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-xl font-bold">2 990 ₽</span>
-                    <span className="text-xs text-muted-foreground">от 997 ₽/мес</span>
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    Оформить заказ
-                  </Button>
-                </div>
-
-                {/* Курс на 2 месяца */}
-                <div className="border rounded-lg p-4 bg-card hover:border-primary/50 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">Курс на 2 месяца</h4>
-                    <Badge variant="outline" className="text-xs">
-                      <Icon name="Clock" size={12} className="mr-1" />
-                      60 дней
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Для заметных результатов
-                  </p>
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-xl font-bold">5 490 ₽</span>
-                    <span className="text-xs text-muted-foreground">от 1 830 ₽/мес</span>
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    Оформить заказ
-                  </Button>
                 </div>
               </div>
 
