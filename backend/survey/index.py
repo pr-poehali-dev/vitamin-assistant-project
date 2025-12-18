@@ -54,6 +54,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif action == 'submit' and method == 'POST':
             return submit_survey(event, headers)
         
+        elif action == 'submit-stage' and method == 'POST':
+            return submit_survey_stage(event, headers)
+        
         elif action == 'user' and method == 'GET':
             return get_user_survey(event, headers)
         
@@ -63,7 +66,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 404,
             'headers': headers,
-            'body': json.dumps({'error': 'Not found. Use ?action=questions|register|submit|user|status'}),
+            'body': json.dumps({'error': 'Not found. Use ?action=questions|register|submit|submit-stage|user|status'}),
             'isBase64Encoded': False
         }
     
@@ -371,6 +374,77 @@ def get_user_survey(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str,
         'statusCode': 200,
         'headers': headers,
         'body': json.dumps(result),
+        'isBase64Encoded': False
+    }
+
+def submit_survey_stage(event: Dict[str, Any], headers: Dict[str, str]) -> Dict[str, Any]:
+    """Сохранение ответов конкретного этапа анкеты (2 или 3)"""
+    body = json.loads(event.get('body', '{}'))
+    
+    survey_id = body.get('survey_id')
+    stage = body.get('stage')
+    answers = body.get('answers', {})
+    
+    if not survey_id or not stage:
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': 'survey_id and stage are required'}),
+            'isBase64Encoded': False
+        }
+    
+    if stage not in [2, 3]:
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': 'stage must be 2 or 3'}),
+            'isBase64Encoded': False
+        }
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    for question_id, answer_value in answers.items():
+        cur.execute("""
+            DELETE FROM survey_answers 
+            WHERE survey_id = %s AND question_id = %s
+        """, (survey_id, int(question_id)))
+        
+        if isinstance(answer_value, (list, dict)):
+            cur.execute("""
+                INSERT INTO survey_answers (survey_id, question_id, answer_json)
+                VALUES (%s, %s, %s)
+            """, (survey_id, int(question_id), json.dumps(answer_value)))
+        else:
+            cur.execute("""
+                INSERT INTO survey_answers (survey_id, question_id, answer_value)
+                VALUES (%s, %s, %s)
+            """, (survey_id, int(question_id), str(answer_value)))
+    
+    if stage == 2:
+        cur.execute("""
+            UPDATE user_surveys
+            SET stage2_completed = TRUE, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (survey_id,))
+    elif stage == 3:
+        cur.execute("""
+            UPDATE user_surveys
+            SET stage3_completed = TRUE, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (survey_id,))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {
+        'statusCode': 200,
+        'headers': headers,
+        'body': json.dumps({
+            'message': f'Stage {stage} completed successfully',
+            'stage': stage
+        }),
         'isBase64Encoded': False
     }
 
