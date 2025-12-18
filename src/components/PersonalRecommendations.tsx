@@ -462,46 +462,140 @@ export default function PersonalRecommendations({ userId, surveyId, onBack }: Pe
           </AccordionItem>
         </Accordion>
 
-        {/* Персональный курс */}
+        {/* Оптимальный витаминный комплекс */}
         <Card className="mt-8 border-2 border-primary animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <Icon name="Sparkles" size={28} className="text-primary" />
-              Ваш персональный курс витаминов
+            <CardTitle className="text-2xl md:text-3xl text-center">
+              Подобрали для вас оптимальный витаминный комплекс
             </CardTitle>
-            <CardDescription className="text-base">
-              На основе выявленных дефицитов и ваших целей
-            </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-6">
-              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Icon name="Package" size={20} className="text-primary" />
-                  Рекомендованный состав курса:
-                </h4>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {consolidatedDeficiencies.slice(0, 8).map((def, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 rounded bg-background">
-                      <Icon name="CheckCircle2" size={16} className="text-primary flex-shrink-0" />
-                      <span className="text-sm font-medium">{def.name}</span>
-                      <Badge variant={def.level === 'высокий' ? 'destructive' : 'secondary'} className="text-xs ml-auto">
-                        {def.level === 'высокий' ? 'Приоритет' : 'Доп.'}
-                      </Badge>
+              {/* Табы выбора длительности */}
+              <div className="flex flex-wrap gap-3 justify-center mb-6">
+                <Button variant="outline" className="flex-1 min-w-[120px] border-2">
+                  <Icon name="Zap" size={18} className="mr-2 text-primary" />
+                  1 месяц
+                </Button>
+                <Button variant="outline" className="flex-1 min-w-[120px] border-2">
+                  <Icon name="Package" size={18} className="mr-2" />
+                  2 месяца
+                </Button>
+                <Button variant="default" className="flex-1 min-w-[120px] border-2 relative">
+                  <Icon name="Sparkles" size={18} className="mr-2" />
+                  3 месяца
+                  <Badge className="absolute -top-2 -right-2 bg-green-500 text-white text-xs">
+                    Подходит вам
+                  </Badge>
+                </Button>
+              </div>
+
+              {/* Карточка курса на 3 месяца */}
+              <div className="border-2 border-primary rounded-xl p-6 bg-gradient-to-br from-primary/5 to-background">
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Левая часть - информация о курсе */}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-green-500 text-white">
+                          <Icon name="Clock" size={14} className="mr-1" />
+                          30 дней
+                        </Badge>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-1">Курс на 3 месяца</h3>
+                      <p className="text-muted-foreground text-sm">
+                        Оптимальная длительность для достижения стабильных результатов
+                      </p>
                     </div>
-                  ))}
+
+                    <div className="space-y-3">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Icon name="Target" size={18} className="text-primary" />
+                        Результаты курса:
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2">
+                          <Icon name="Droplet" size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">Восполните основные дефициты</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Icon name="Smile" size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">Заметите улучшение самочувствия</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Icon name="Sparkles" size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">Сформируете здоровую привычку</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-3xl font-bold">7 490 ₽</span>
+                        <span className="text-sm text-muted-foreground line-through">9 990 ₽</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        <Icon name="CreditCard" size={12} className="inline mr-1" />
+                        частями от 2 497 ₽
+                      </p>
+                    </div>
+
+                    <Button size="lg" className="w-full text-lg">
+                      <Icon name="ShoppingCart" size={20} className="mr-2" />
+                      Оформить заказ
+                    </Button>
+                  </div>
+
+                  {/* Правая часть - изображение (будет видна на десктопе) */}
+                  <div className="hidden md:block md:w-[200px] relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg"></div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <Button size="lg" className="flex-1">
-                  <Icon name="ShoppingCart" size={20} className="mr-2" />
-                  Перейти к подбору продуктов
-                </Button>
-                <Button size="lg" variant="outline">
-                  <Icon name="Download" size={20} className="mr-2" />
-                  Скачать PDF
-                </Button>
+              {/* Карточки для других курсов (компактные) */}
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Курс на 1 месяц */}
+                <div className="border rounded-lg p-4 bg-card hover:border-primary/50 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold">Курс на 1 месяц</h4>
+                    <Badge variant="outline" className="text-xs">
+                      <Icon name="Clock" size={12} className="mr-1" />
+                      30 дней
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Для первых, быстрых изменений
+                  </p>
+                  <div className="flex items-baseline justify-between mb-3">
+                    <span className="text-xl font-bold">2 990 ₽</span>
+                    <span className="text-xs text-muted-foreground">от 997 ₽/мес</span>
+                  </div>
+                  <Button variant="outline" className="w-full">
+                    Оформить заказ
+                  </Button>
+                </div>
+
+                {/* Курс на 2 месяца */}
+                <div className="border rounded-lg p-4 bg-card hover:border-primary/50 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold">Курс на 2 месяца</h4>
+                    <Badge variant="outline" className="text-xs">
+                      <Icon name="Clock" size={12} className="mr-1" />
+                      60 дней
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Для заметных результатов
+                  </p>
+                  <div className="flex items-baseline justify-between mb-3">
+                    <span className="text-xl font-bold">5 490 ₽</span>
+                    <span className="text-xs text-muted-foreground">от 1 830 ₽/мес</span>
+                  </div>
+                  <Button variant="outline" className="w-full">
+                    Оформить заказ
+                  </Button>
+                </div>
               </div>
 
               <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg">
